@@ -1,0 +1,63 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc} % standard input encoding
+\usepackage[T1]{fontenc} % standard modern font encoding
+\usepackage{lmodern} % use Latin Modern font (it has vectorized special characters = better copying od searching in pdfs)
+\usepackage[czech]{babel}
+\usepackage[a4paper]{geometry} % margin adjustment
+\usepackage[pdfusetitle]{hyperref} % metadata, content in pdf, hyperlinks
+
+% bibliography
+\usepackage[backend=bibtex]{biblatex}
+\addbibresource{bibliography.bib}
+
+\def\MainTitle{Automatická detekce ischemické léze z MR obrazových dat u cévní mozkové příhody}
+\def\Subtitle{Diplomový projekt}
+\date{\large \hfill \today}
+
+\hypersetup{pdftitle={\MainTitle}} % add main title to the pdf metadata
+\title{
+	\ifdefined\Subtitle \large \Subtitle \\[1em] \fi
+	\LARGE \textbf{\MainTitle} \\[2em]
+	\begin{large}
+	\begin{minipage}{3cm}
+		\textbf{Autor:}\\
+		Jakub Šmíd
+	\end{minipage}
+	\hfill
+	\begin{minipage}{6cm}
+		\textbf{Vedoucí:}\\
+		doc. MUDr. Jakub Otáhal, Ph.D. \\
+		Ing. David Kala
+	\end{minipage}
+	\end{large}
+}
+
+\begin{document}
+\maketitle
+
+\section{Popis projektu}
+Cévní mozková příhoda (mrtvice) je jedním z nejčastějších onemocnění a příčin úmrtí celosvětově. Zásadní krok při jejím vyšetření je segmentace poškozené tkáně na obrazech z magnetické resonance. V současné klinické praxi se segmentace provádí manuálním obkreslováním a kvůli tomu je velmi časově náročná a výsledky podléhají značné subjektivitě. Cílem této práce je celý proces zrychlit přidáním prvků automatické segmentace obrazu.
+Práce bude probíhat v úzké spolupráci s Fakultní nemocnicí v Motole a neurovědci z EpiReC zabývající se dlouhodobě problematikou cévní mozkové příhody a souvisejících onemocnění.
+
+Téma propojuje technické znalosti (zpracování obrazu, návrh algoritmů) s lékařským prostředím neurověd.
+
+\section{Dataset}
+\begin{itemize}
+	\item FLAIR vs DWI
+	\item Nifty - popis, registrace
+	\item Možnosti rozšíření datasetu (stažení dalších dat, augmentace)
+\end{itemize}
+
+\section{Přehledové studie}
+
+\section{Ztrátové funkce a hodnocení úspěšnosti segmentace}
+
+\section{Architektury neuronových sítí}
+\begin{itemize}
+	\item ISLES
+	\item 2D vs 3D segmentace
+\end{itemize}
+
+\printbibliography
+
+\end{document}
