@@ -1,5 +1,8 @@
 # Automatic MRI segmentation of ischemic stroke
 
+## Notes
+- [Data augmentation and preprocessing using TorchIO](https://www.imaios.com/en/resources/blog/ai-for-medical-imaging-using-torchio-python)
+
 ## Dataset
 Dataset is provided by Second Faculty of Medicine CUNI, Prague.\
 For this work we need FLAIR and DWI2 files in NIfTI format with .nii extension. Data should be already registered using SPM software.
