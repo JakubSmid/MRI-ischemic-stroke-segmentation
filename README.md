@@ -1,4 +1,5 @@
 # Automatic MRI segmentation of ischemic stroke
+[Project report in PDF](./doc_project/project.pdf)
 
 ## Notes
 - [Data augmentation and preprocessing using TorchIO](https://www.imaios.com/en/resources/blog/ai-for-medical-imaging-using-torchio-python)
