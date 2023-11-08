@@ -1,3 +1,71 @@
+@ARTICLE{ali,
+	title    = "Lesion identification using unified segmentation-normalisation
+	models and fuzzy clustering",
+	author   = "Seghier, Mohamed L and Ramlackhansingh, Anil and Crinion, Jenny
+	and Leff, Alexander P and Price, Cathy J",
+	abstract = "In this paper, we propose a new automated procedure for lesion
+	identification from single images based on the detection of
+	outlier voxels. We demonstrate the utility of this procedure
+	using artificial and real lesions. The scheme rests on two
+	innovations: First, we augment the generative model used for
+	combined segmentation and normalization of images, with an
+	empirical prior for an atypical tissue class, which can be
+	optimised iteratively. Second, we adopt a fuzzy clustering
+	procedure to identify outlier voxels in normalised gray and white
+	matter segments. These two advances suppress misclassification of
+	voxels and restrict lesion identification to gray/white matter
+	lesions respectively. Our analyses show a high sensitivity for
+	detecting and delineating brain lesions with different sizes,
+	locations, and textures. Our approach has important implications
+	for the generation of lesion overlap maps of a given population
+	and the assessment of lesion-deficit mappings. From a clinical
+	perspective, our method should help to compute the total volume
+	of lesion or to trace precisely lesion boundaries that might be
+	pertinent for surgical or diagnostic purposes.",
+	journal  = "Neuroimage",
+	volume   =  41,
+	number   =  4,
+	pages    = "1253--1266",
+	month    =  jul,
+	year     =  2008,
+	language = "en"
+}
+@article{gnb,
+	title={Voxel-based Gaussian na{\"i}ve Bayes classification of ischemic stroke lesions in individual T1-weighted MRI scans},
+	author={Joseph C. Griffis and Jane B. Allendorfer and Jerzy P. Szaflarski},
+	journal={Journal of Neuroscience Methods},
+	year={2016},
+	volume={257},
+	pages={97-108},
+	url={https://api.semanticscholar.org/CorpusID:22978547}
+}
+@article{LINDA,
+	author = {Pustina, Dorian and Coslett, H. Branch and Turkeltaub, Peter E. and Tustison, Nicholas and Schwartz, Myrna F. and Avants, Brian},
+	title = {Automated segmentation of chronic stroke lesions using LINDA: Lesion identification with neighborhood data analysis},
+	journal = {Human Brain Mapping},
+	volume = {37},
+	number = {4},
+	pages = {1405-1421},
+	keywords = {VLSM, machine learning, random forests, hierarchical, subacute, automatic},
+	doi = {https://doi.org/10.1002/hbm.23110},
+	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/hbm.23110},
+	eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/hbm.23110},
+	abstract = {Abstract The gold standard for identifying stroke lesions is manual tracing, a method that is known to be observer dependent and time consuming, thus impractical for big data studies. We propose LINDA (Lesion Identification with Neighborhood Data Analysis), an automated segmentation algorithm capable of learning the relationship between existing manual segmentations and a single T1-weighted MRI. A dataset of 60 left hemispheric chronic stroke patients is used to build the method and test it with k-fold and leave-one-out procedures. With respect to manual tracings, predicted lesion maps showed a mean dice overlap of 0.696 ± 0.16, Hausdorff distance of 17.9 ± 9.8 mm, and average displacement of 2.54 ± 1.38 mm. The manual and predicted lesion volumes correlated at r = 0.961. An additional dataset of 45 patients was utilized to test LINDA with independent data, achieving high accuracy rates and confirming its cross-institutional applicability. To investigate the cost of moving from manual tracings to automated segmentation, we performed comparative lesion-to-symptom mapping (LSM) on five behavioral scores. Predicted and manual lesions produced similar neuro-cognitive maps, albeit with some discussed discrepancies. Of note, region-wise LSM was more robust to the prediction error than voxel-wise LSM. Our results show that, while several limitations exist, our current results compete with or exceed the state-of-the-art, producing consistent predictions, very low failure rates, and transferable knowledge between labs. This work also establishes a new viewpoint on evaluating automated methods not only with segmentation accuracy but also with brain–behavior relationships. LINDA is made available online with trained models from over 100 patients. Hum Brain Mapp 37:1405-1421, 2016. © 2016 Wiley Periodicals, Inc.},
+	year = {2016}
+}
+@article{DEHAAN201569,
+	title = {Fast semi-automated lesion demarcation in stroke},
+	journal = {NeuroImage: Clinical},
+	volume = {9},
+	pages = {69-74},
+	year = {2015},
+	issn = {2213-1582},
+	doi = {https://doi.org/10.1016/j.nicl.2015.06.013},
+	url = {https://www.sciencedirect.com/science/article/pii/S2213158215001199},
+	author = {Bianca {de Haan} and Philipp Clas and Hendrik Juenger and Marko Wilke and Hans-Otto Karnath},
+	keywords = {Stroke, Lesion segmentation, Semi-automated, Lesion–behaviour mapping analyses, SPM toolbox},
+	abstract = {Lesion–behaviour mapping analyses require the demarcation of the brain lesion on each (usually transverse) slice of the individual stroke patient's brain image. To date, this is generally thought to be most precise when done manually, which is, however, both time-consuming and potentially observer-dependent. Fully automated lesion demarcation methods have been developed to address these issues, but these are often not practicable in acute stroke research where for each patient only a single image modality is available and the available image modality differs over patients. In the current study, we evaluated a semi-automated lesion demarcation approach, the so-called Clusterize algorithm, in acute stroke patients scanned in a range of common image modalities. Our results suggest that, compared to the standard of manual lesion demarcation, the semi-automated Clusterize algorithm is capable of significantly speeding up lesion demarcation in the most commonly used image modalities, without loss of either lesion demarcation precision or lesion demarcation reproducibility. For the three investigated acute datasets (CT, DWI, T2FLAIR), containing a total of 44 patient images obtained in a regular clinical setting at patient admission, the reduction in processing time was on average 17.8 min per patient and this advantage increased with increasing lesion volume (up to 60 min per patient for the largest lesion volumes in our datasets). Additionally, our results suggest that performance of the Clusterize algorithm in a chronic dataset with 11 T1 images was comparable to its performance in the acute datasets. We thus advocate the use of the Clusterize algorithm, integrated into a simple, freely available SPM toolbox, for the precise, reliable and fast preparation of imaging data for lesion–behaviour mapping analyses.}
+}
 @article{Maier2016,
 	abstract = {Ischemic stroke is the most common cerebrovascular disease, and its diagnosis, treatment, and study relies on non-invasive imaging. Algorithms for stroke lesion segmentation from magnetic resonance imaging (MRI) volumes are intensely researched, but the reported results are largely incomparable due to different datasets and evaluation schemes. We approached this urgent problem of comparability with the Ischemic Stroke Lesion Segmentation (ISLES) challenge organized in conjunction with the MICCAI 2015 conference. In this paper we propose a common evaluation framework, describe the publicly available datasets, and present the results of the two sub-challenges: Sub-Acute Stroke Lesion Segmentation (SISS) and Stroke Perfusion Estimation (SPES). A total of 16 research groups participated with a wide range of state-of-the-art automatic segmentation algorithms. A thorough analysis of the obtained data enables a critical evaluation of the current state-of-the-art, recommendations for further developments, and the identification of remaining challenges. The segmentation of acute perfusion lesions addressed in SPES was found to be feasible. However, algorithms applied to sub-acute lesion segmentation in SISS still lack accuracy. Overall, no algorithmic characteristic of any method was found to perform superior to the others. Instead, the characteristics of stroke lesion appearances, their evolution, and the observed challenges should be studied in detail. The annotated ISLES image datasets continue to be publicly available through an online evaluation system to serve as an ongoing benchmarking resource (www.isles-challenge.org).},
 	author = {Oskar Maier and Bjoern H Menze and Janina von der Gablentz and Levin Häni and Mattias P Heinrich and Matthias Liebrand and Stefan Winzeck and Abdul Basit and Paul Bentley and Liang Chen and Daan Christiaens and Francis Dutil and Karl Egger and Chaolu Feng and Ben Glocker and Michael Götz and Tom Haeck and Hanna-Leena Halme and Mohammad Havaei and Khan M Iftekharuddin and Pierre-Marc Jodoin and Konstantinos Kamnitsas and Elias Kellner and Antti Korvenoja and Hugo Larochelle and Christian Ledig and Jia-Hong Lee and Frederik Maes and Qaiser Mahmood and Klaus H Maier-Hein and Richard McKinley and John Muschelli and Chris A Pal and Linmin Pei and Janaki Raman Rangarajan and Syed MS Reza and David Robben and Daniel Rueckert and Eero Salli and Paul Suetens and Ching-Wei Wang and Matthias Wilms and Jan S Kirschke and Ulrike M Krämer and Thomas F Münte and Peter Schramm and Roland Wiest and Heinz Handels and Mauricio Reyes},
@@ -22,4 +90,27 @@
 	title = {A comparison of automated lesion segmentation approaches for chronic stroke T1-weighted MRI data},
 	url = {https://www.biorxiv.org/content/10.1101/441451v1 https://www.biorxiv.org/content/10.1101/441451v1.abstract},
 	year = {2018},
+}
+@article{uk-imp2,
+	title = {Efficient multi-scale 3D CNN with fully connected CRF for accurate brain lesion segmentation},
+	journal = {Medical Image Analysis},
+	volume = {36},
+	pages = {61-78},
+	year = {2017},
+	issn = {1361-8415},
+	doi = {https://doi.org/10.1016/j.media.2016.10.004},
+	url = {https://www.sciencedirect.com/science/article/pii/S1361841516301839},
+	author = {Konstantinos Kamnitsas and Christian Ledig and Virginia F.J. Newcombe and Joanna P. Simpson and Andrew D. Kane and David K. Menon and Daniel Rueckert and Ben Glocker},
+	keywords = {3D convolutional neural network, Fully connected CRF, Segmentation, Brain lesions, Deep learning},
+	abstract = {We propose a dual pathway, 11-layers deep, three-dimensional Convolutional Neural Network for the challenging task of brain lesion segmentation. The devised architecture is the result of an in-depth analysis of the limitations of current networks proposed for similar applications. To overcome the computational burden of processing 3D medical scans, we have devised an efficient and effective dense training scheme which joins the processing of adjacent image patches into one pass through the network while automatically adapting to the inherent class imbalance present in the data. Further, we analyze the development of deeper, thus more discriminative 3D CNNs. In order to incorporate both local and larger contextual information, we employ a dual pathway architecture that processes the input images at multiple scales simultaneously. For post-processing of the network’s soft segmentation, we use a 3D fully connected Conditional Random Field which effectively removes false positives. Our pipeline is extensively evaluated on three challenging tasks of lesion segmentation in multi-channel MRI patient data with traumatic brain injuries, brain tumours, and ischemic stroke. We improve on the state-of-the-art for all three applications, with top ranking performance on the public benchmarks BRATS 2015 and ISLES 2015. Our method is computationally efficient, which allows its adoption in a variety of research and clinical settings. The source code of our implementation is made publicly available.}
+}
+@inproceedings{cn-neu,
+	author = {Feng, Chaolu and Zhao, Dazhe and Huang, Min},
+	year = {2016},
+	month = {03},
+	pages = {233-245},
+	title = {Segmentation of Ischemic Stroke Lesions in Multi-spectral MR Images Using Weighting Suppressed FCM and Three Phase Level Set},
+	volume = {9556},
+	isbn = {0302-9743},
+	doi = {10.1007/978-3-319-30858-6_20}
 }
