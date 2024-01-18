@@ -48,7 +48,8 @@ Práce bude probíhat v úzké spolupráci s Fakultní nemocnicí v Motole a neu
 
 Téma propojuje technické znalosti (zpracování obrazu, návrh algoritmů) s lékařským prostředím neurověd.
 
-\section{Segmentace}
+% \section{Segmentace}
+
 \section{Evaluační metriky}
 Před tím, než se začneme věnovat publikacím a aktuálnímu stavu poznání, je nutné uvést metriky, na základě kterých budeme moci vyhodnotit úspěšnost segmentačních algoritmů. Díky uvedeným metrikám je možné srovnat kvalitu dvou segmentací stejného vzoru - typicky segmentaci experta (radiologa) a automatickou segmentaci.
 
@@ -84,6 +85,7 @@ HD je definována vztahem \ref{HD}, a podobně jako ASSD se i HD běžně uvád�
 
 \subsection{Precision}
 \subsection{Recall}
+\subsection{Leave-One-Out Cross-Validation}
 
 \section{Doporučená literatura}
 \subsection{ISLES 2015}
@@ -148,6 +150,8 @@ Tato metoda nepotřebuje žádná trénovací data, jelikož k segmentaci použ�
 Jelikož většina rehabilitačních metod po mozkové mrtvici závisí na T1-váženém obrazu, rozhodli se autoři článku \cite{Ito2018} provést srovnání jedné semi-automatické a tří plně automatických segmentačních algoritmů lézí z T1-vážených obrazů. Motivací bylo jejich systematické otestování na velkém datasetu.
 
 Chronickou fázi autoři definují jako časové období od několika týdnů po roky od mozkové příhody. Pro rehabilitační účely se z časových a finančních důvodů pacient typicky snímkuje pouze sekvencí T1-w ve vysokém rozlišení. Tato sekvence je zároveň citlivá na zobrazení nekrózy vzniklé od 2 týdnů po příhodě, proto je vhodná k detekci chronických lézí.
+
+Na druhou stranu segmentace akutní mrtvice, kde jsou snímky typicky pořízeny během prvních několika dnů, snímkování zahrnuje multimodální data - typicky DWI, FLAIR, PWI (perfusion weighted imaging). Sběr multimodálních dat přispívá k lepšímu rozhodování o léčbě pacienta v akutní fázi a zároveň k hrubé predikci klinických dopadů mrtvice. Proto se algoritmy zaměřují na rychlou segmentaci a pracují s multimodálními daty. Nicméně autoři článku se dále soustředí pouze na segmentaci, která je určená pro rehabilitační výzkum.
 
 Semiautomatická metoda \textbf{Clusterize} byla původně vyvinutá pro sledování ztráty myelinu při leukodystrofii. Ukázalo se však, že metoda založená na analýze T2-w, funguje i pro segmentaci akutní a chronické mrtvice z T1-w. \cite{DEHAAN201569} Clusterize nejprve vyhledává lokální maxima intenzity voxelů na každém snímku. Následně přiřadí zbylé voxely podle jejich intenzity do klastrů identifikovaných podle vyhledaných maxim. Poté musí člověk manuálně vybrat v každém řezu požadovaný klastr a případně udělat korekci masky.
 
@@ -215,21 +219,24 @@ Výsledky studie ukázaly, že všechny čtyři metody vykazují vysokou chybovo
 
 Autoři doporučují, aby v navazujících výzkumech byla použitá prior knowledge o velikosti a poloze léze. Zároveň navrhují používání větších a variabilních datasetů. V závěru článku důrazně upozorňují, že je třeba vizuální inspekce a manuální kontrola kvality automatické segmentace pro každý snímek.
 
-\section{Dataset}
-\begin{itemize}
-	\item FLAIR vs DWI
-	\item Nifty - popis, registrace
-	\item Možnosti rozšíření datasetu (stažení dalších dat, augmentace)
-\end{itemize}
+\subsection{Segmentace pomocí Markov random fields}
+Studie \cite{Subbanna2019} se zaměřuje na segmentaci sub-akutní ischemické léze (2-7 dní od nástupu mrtvice) pouze z FLAIR snímků metodou Markovovských náhodných polí. Mnoho publikovaných metod trpí 
 
-\section{Manuální segmentace}
-popsat aktuální proces segmentace experta
-
-\section{Architektury neuronových sítí}
-\begin{itemize}
-	\item ISLES
-	\item 2D vs 3D segmentace
-\end{itemize}
+%\section{Dataset}
+%\begin{itemize}
+%	\item FLAIR vs DWI
+%	\item Nifti - popis, registrace
+%	\item Možnosti rozšíření datasetu (stažení dalších dat, augmentace)
+%\end{itemize}
+%
+%\section{Manuální segmentace}
+%popsat aktuální proces segmentace experta
+%
+%\section{Architektury neuronových sítí}
+%\begin{itemize}
+%	\item ISLES
+%	\item 2D vs 3D segmentace
+%\end{itemize}
 
 \printbibliography
 
