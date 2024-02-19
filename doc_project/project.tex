@@ -89,11 +89,18 @@ HD je definována vztahem \ref{HD}, a podobně jako ASSD se i HD běžně uvád�
 
 \section{Doporučená literatura}
 \subsection{ISLES 2015}
-Benchmarková studie \cite{Maier2016} zmiňuje problém komparability jednotlivých algoritmů pro segmentaci ischemické léze z důvodu různorodosti používaných datasetů a evaluačním procesům. Tento problém se autoři rozhodli vyřešit na soutěži Ischemic Stroke Lesion Segmentation challenge (ISLES) v roce 2015. Článek navrhuje evaluační proces, zmiňuje veřejně dostupné datasety a kromě toho nabízí srovnání výsledků z ISLES, které se zúčastnilo 16 vědeckých týmů.
+\label{lbl-isles15}
+Benchmarková studie \cite{Maier2016} zmiňuje problém komparability jednotlivých algoritmů pro segmentaci ischemické léze z důvodu různorodosti používaných datasetů a evaluačním procesům. Tento problém se autoři rozhodli vyřešit na soutěži Ischemic Stroke Lesion Segmentation challenge (ISLES) v roce 2015. Článek představuje evaluační proces, zmiňuje veřejně dostupné datasety a hlavně nabízí srovnání výsledků z ISLES, které se zúčastnilo 16 vědeckých týmů.
 
-Soutěž byla rozdělena na dvě kategorie. První z nich řešila Stroke Perfusion Estimation (SPES) - řešitelé se zaměřili na interpretaci obrazů akutní fáze mozkové mrtvice (0-24 hodin). Druhou kategorií byla Sub-acute Ischemic Stroke lesion Segmentation (SISS), kde bylo cílem analyzovat obrazy z pozdějších fází mrtvice (24 hodin - 2 týdny).
+Soutěž byla rozdělena na dvě kategorie. První z nich řešila Stroke Perfusion Estimation (SPES) - řešitelé se zaměřili na interpretaci obrazů akutní fáze mozkové mrtvice (0-24 hodin). Druhou kategorií byla Sub-acute Ischemic Stroke lesion Segmentation (SISS), kde bylo cílem analyzovat obrazy z pozdějších fází mrtvice (24 hodin - 2 týdny). Pro účely této práce je důležitá hlavně kategorie SISS, proto se dále budu věnovat pouze jí.
 
-Data pro SISS byla nasbírána ze dvou zdravotnických zařízení, byla pořízena na stroji s magnetickým polem 3 T. Celkem bylo do datasetu zahrnuto 64 pacientů. Snímky pacientů, kteří byli zařazeni do datasetu, musely obsahovat alespoň sekvence T1-vážený, T2-vážený, DWI (b = 1000) a FLAIR. Segmentace pro trénink modelů byla provedena pouze na sekvenci FLAIR, jelikož tato sekvence vykazuje nejnižší variabilitu při segmentování mezi různými experty. Zbylá data poskytovala pouze podpůrnou informaci. Snímky pacientů byly rozděleny následovně: 28 pacientů pro trénink a 36 pro testování.
+Data pro SISS byla nasbírána ze dvou zdravotnických zařízení, byla pořízena na stroji s magnetickým polem 3 T. Snímky jednotlivých pacientů ale byly pořízený s různými parametry, což zapříčinilo, že mají různé rozlišení a různou míru artefaktů. Celkem bylo do datasetu zahrnuto 64 pacientů.
+
+Snímky pacientů, kteří byli zařazeni do datasetu, musely obsahovat alespoň sekvence T1-vážený, T2-vážený, DWI (b = 1000 s/mm\textsuperscript{2}) a FLAIR. V rámci preprocessingu autoři soutěže provedli skull-stripping pomocí algoritmu BET2 \cite{jenkinson2005bet2} a provedli manuální korekturu. Pomocí spline jsou transformovány všechny snímky na izotropní velikost voxelu 1 mm\textsuperscript{2}. Byla také provedena rigidní koregistrace na snímky FLAIR pomocí Elastix \cite{elastix}.
+
+Expertní segmentace byla provedena pouze na sekvenci FLAIR, jelikož tato sekvence vykazuje nejnižší variabilitu při segmentování mezi různými experty. Zbylá data poskytovala pouze podpůrnou informaci. Kromě pravidla, že byla segmentována pouze sub-akutní ischemická léze se experti řídili dalšími pravidly: částečně obklopené fissury nejsou segmentovány, ale malé nebo z velké části obklopené fissury jsou osegmentovány. Segmentace nejsou duté (nemají díry) a mají hladký tvar ("prostorově konzistentní").
+
+Průměrný počet lézí na snímku je 2.46 s tím, že jsou v datasetu zahrnuty snímky s 1 až 14 lézemi. Průměrný objem léze je 17.59 ml, minimum je 1.00 ml a maximální objem léze je 346.06 ml. Snímky pacientů byly rozděleny následovně: 28 pacientů pro trénink a 36 pro testování. Pro testovací data nejsou zveřejněny expertní segmentace, které byly pro účely testování pořízeny dvěma experty. Trénovací množina dat je segmentována pouze jedním expertem a obsahuje snímky pouze z jednoho zdravotnického zařízení.
 
 Výsledky kategorie SISS jsou zobrazeny v tabulce \ref{tbl-siss_results}. Jelikož dataset byl anotován dvakrát - podruhé jiným expertem, obsahuje tabulka výsledků na posledním řádku porovnání těchto dvou segmentací. Vizualizace výsledků je na obrázku \ref{img-isles2015}. Je nutné zmínit, že žádný z navržených algoritmů nedosáhl kladného Dice koeficientu u všech 36 pacientů z testovací sady. To znamená, že u některých snímků nedošlo k překryvu segmentací mezi expertem a algoritmem.
 
@@ -128,22 +135,35 @@ Výsledky kategorie SISS jsou zobrazeny v tabulce \ref{tbl-siss_results}. Jeliko
 	\label{tbl-siss_results}
 \end{table}
 
-Autoři článku uvádí, že nejsou schopni jasně rozhodnout o rozdílech ve výkonnosti navržených metod - a to ani v typech jednotlivých přístupů (deep nebo klasický). Dvě nejlépe hodnocené metody, vykazovaly statisticky stejnou přesnost: metoda UK-Imp2 (později pojmenovaná DeepMedic) používala hluboké učení - konkrétně \alert{neuronové konvoluční sítě}, metoda CN-Neu byla založená na fuzzy c-means. Třetí nejlepší metoda byla založená na náhodných lesech (\alert{Random Forest}). Přesto nelze říci, že by nějaká z nich pracovala výrazně lépe. Autoři zmiňují, že klíčem k úspěchu je spíše odladění hyperparametrů modelu a jeho adaptace. Nejlepší tři řešení využívaly kombinaci dvou různých algoritmů, aby vykompenzovaly slabá místa každého z nich.
+Autoři článku uvádí, že nejsou schopni jasně rozhodnout o rozdílech ve výkonnosti navržených metod - a to ani v typech jednotlivých přístupů (deep learning nebo klasické metody). Dvě nejlépe hodnocené metody, vykazovaly statisticky stejnou přesnost: metoda UK-Imp2 (později pojmenovaná DeepMedic) \cite{uk-imp2} používala hluboké učení - konkrétně \alert{neuronové konvoluční sítě}, metoda CN-Neu \cite{cn-neu} byla založená na fuzzy c-means. Třetí nejlepší metoda byla založená na náhodných lesech (\alert{Random Forest}). Přesto nelze říci, že by nějaká z nich pracovala výrazně lépe. Autoři zmiňují, že klíčem k úspěchu je spíše odladění hyperparametrů modelu a jeho adaptace. Nejlepší tři řešení využívaly kombinaci dvou různých algoritmů, aby vykompenzovaly slabá místa každého z nich.
 
 Metody soutěžících byly rovněž otestovány na datech z jiných zdravotnických center. Zajímavým výstupem soutěže je zjištění, že ani jeden z algoritmů nebyl schopen dobře fungovat na cizích datech. Přestože metody vykazovaly dobrou generalizaci na testovacích datech pořízených ze stejného datacentra jako data trénovací. Hypotéza, proč nedocházelo k \alert{overfittingu} je, že kvůli vysokému inter-rater Dice koeficientu (tzn. variabilitě segmentací napříč experty) nebyly schopny se ani modely přeučit na trénovací data.
 
 Automatická segmentace obecně fungovala dobře na velkých lézích se silným FLAIR signálem, naopak byl problém v segmentaci malých lézí se slabým FLAIR signálem. Dalším problémem byla segmentace WMH (\alert{white matter hyperintensity}), místo ischemické léze. Toto zjištění je podle autorů překvapující, protože WMH není rozpoznatelná na DWI sekvenci (na rozdíl od léze), jelikož má stejnou intenzitu jako okolní tkáň - není viditelná.
 
-Článek hodnotí SISS jako velmi obtížnou úlohu - nejen na základě přesnosti navržených metod, ale i na velkém rozptylu DC napříč experty. Podle autorů by kliničtí výzkumníci neměli očekávat spolehlivé a plně automatické řešení v blízké budoucnosti, jelikož je úloha příliš složitá. Automatické segmentační algoritmy by měly sloužit spíše jako podpůrný nástroj pro radiology.
+Článek hodnotí SISS jako velmi obtížnou úlohu - nejen na základě přesnosti navržených metod, ale i na velkém rozptylu Dice koeficientu napříč experty. Podle autorů by kliničtí výzkumníci neměli očekávat spolehlivé a plně automatické řešení v blízké budoucnosti, jelikož je úloha příliš složitá. Automatické segmentační algoritmy by měly sloužit spíše jako podpůrný nástroj pro radiology.
 
 Soutěž ukázala, že aktuální stav automatické segmentace sub-akutní léze postrádá jak přesnost, tak robustnost, která je potřebná pro reálné nasazení. Dalším zjištěním bylo, že žádný z algoritmů nefungoval významně lépe proti ostatním.
 
 Pro budoucí výzkum autoři doporučují kombinovat různé algoritmy pro vylepšení segmentace. Evaluace by nikdy neměla být prováděna pouze na privátním datasetu a měl by být kladen důraz na adaptaci algoritmů na data z jiných center.
 
 \subsubsection{DeepMedic \cite{uk-imp2}}
-Segmentační metoda je založená na 3D konvoluční neuronové síti (CNN) s 11 vrstvami. Dataset, na kterém autoři trénovali neuronovou síť byl augmentován zrcadlením snímků přes sagitální rovinu. Před samotnou segmentací je 3D snímek rozdělen do několika batchů, díky tomu autoři zmenší počet trénovaných parametrů sítě. Následně vstupuje daný 3D batch do dvoucestné konvoluční sítě - do první cesty v plném rozlišení a do druhé cesty v nízkém rozlišení. Poté jsou obě cesty spojeny a příznaky vstupují do fully connected vrstev (FC). Autoři používají malá konvoluční jádra a tím snižují nároky na GPU paměť. Přestože architektura pracuje na 3D snímcích, lze ji natrénovat na grafické kartě, která má pouze 3 GB paměti.
+\label{lbl-DeepMedic}
+Segmentační metoda je založená na 3D konvoluční neuronové síti (CNN) s 11 vrstvami. Dataset, na kterém autoři trénovali neuronovou síť byl augmentován zrcadlením snímků přes sagitální rovinu. V rámci preprocessingu autoři normalizují snímky na nulovou střední hodnotu a rozptyl 1, to se společně s augmentací děje paralelně s trénováním, tedy je to již implementované v navrhované metodě. Před samotnou segmentací je 3D snímek rozdělen do několika menších 3D patchů, díky tomu autoři zmenší počet trénovaných parametrů sítě. Následně vstupuje daný 3D batch do dvoucestné konvoluční sítě - do první cesty v plném rozlišení a do druhé cesty v nízkém rozlišení. Snížení rozlišení je realizováno podsamplováním původního skenu. Díky tomu batch vstupující do druhé cesty obsahuje širší okolí než batch vstupující do cesty první. Poté jsou obě cesty spojeny a příznaky vstupují do fully connected vrstev (FC). Nákres metody se nachází na Obrázku \ref{img-DeepMedic}.
+
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=\textwidth]{DeepMedic}
+	\caption{Jedna z prvotních verzí DeepMedic, která ilustruje architekturu sítě a přístup autorů k problému. V levé části vidíme snímek s více kanály (modalitami) vstupující do sítě, tento snímek je rozdělen do několika menších patchů s různým rozlišením. Architektura je čistě konvoluční a na konci výstup jader vstupuje do Fully Connected vrstev, které jsou realizovány jako konvoluce s jednotkovým kernelem.}
+	\label{img-DeepMedic}
+\end{figure}
+
+Autoři používají malá konvoluční jádra a tím snižují nároky na GPU paměť. Přestože architektura pracuje na 3D snímcích, lze ji natrénovat na grafické kartě, která má pouze 3 GB paměti.
+
+Tato metoda po vyhodnocení ISLES 2015 byla a je stále aktivně vyvíjena. V roce 2017 DeepMedic byl součástí výherního řešení soutěže BRATS 2017, jejímž cílem je segmentace nádorů na mozku. \cite{Kamnitsas_2017, kamnitsas2017ensembles}
 
 \subsubsection{CN-Neu (Chaolu Feng) \cite{cn-neu}}
+\label{lbl-cnNeu}
 Tato metoda nepotřebuje žádná trénovací data, jelikož k segmentaci používá fuzzy c-means. Pro každou vstupní sekvenci proběhne segmentace na bílou hmotu, šedou hmotu mozkovou, mozkomíšní mok a lézi. Za lézi je následně určen ten voxel, který byl označen za lézi ve FLAIR sekvenci a zároveň alespoň v nějaké další sekvenci. Nakonec autoři upraví hranice léze podle vlastního algoritmu, jež je matematicky formulován v citovaném článku.
 
 \subsection{Segmentace chronické mrtvice z T1-váženého obrazu}
@@ -220,14 +240,88 @@ Výsledky studie ukázaly, že všechny čtyři metody vykazují vysokou chybovo
 Autoři doporučují, aby v navazujících výzkumech byla použitá prior knowledge o velikosti a poloze léze. Zároveň navrhují používání větších a variabilních datasetů. V závěru článku důrazně upozorňují, že je třeba vizuální inspekce a manuální kontrola kvality automatické segmentace pro každý snímek.
 
 \subsection{Segmentace pomocí Markov random fields}
-Studie \cite{Subbanna2019} se zaměřuje na segmentaci sub-akutní ischemické léze (2-7 dní od nástupu mrtvice) pouze z FLAIR snímků metodou Markovovských náhodných polí. Mnoho publikovaných metod trpí 
+Studie \cite{Subbanna2019} se zaměřuje na segmentaci sub-akutní ischemické léze (2-7 dní od nástupu mrtvice) pouze z FLAIR snímků metodou Markovovských náhodných polí.
 
-%\section{Dataset}
+Motivací autorů pro použití uvedené metody bylo to, že jiné publikované algoritmy trpí, resp. se musí vypořádat s různými problémy normalizace dat. A to zvláště v případě, kdy trénovací dataset tvoří data sesbíraná z různých zdravotnických center - typicky jsou pak snímky z jednotlivých center pořízený s různým nastavením parametrů snímkování. Kromě toho se autoři chtěli vyhnout multimodálním datům (stejný pacient je snímkován v různých sekvencích). Důvodem bylo to, že pro použití multimodálních dat je potřeba registrovat data do společné vztažné soustavy, to vede k interpolačním artefaktům. Zároveň registrace snímků vyžaduje manuální nastavení parametrů tak, aby byl např. potlačen problém \alert{distorze}, která je často přítomná při pořízení DWI snímků získaných metodou echo-planárního snímkování.
+
+Výhodou použití pouze sekvence FLAIR je dle autorů to, že FLAIR je základním a nejjednodušším ukazatelem při sledování a segmentaci ischemické léze. Zároveň je možné tuto metodu použít pro historické datasety, které se používají jako kontrolní skupina v klinických studiích.
+
+Největší chybovost segmentace mozkových lézí z FLAIR způsobují tzv. White Matter Hyperintensities, které již byly zmíněny v článku \cite{Maier2016}. Tyto oblasti jsou algoritmy zaměňovány s lézí a falešně-pozitivně osegmentovány.
+
+Autoři pracují s daty ze 8 zdravotnických center, které jsou získány ze tří datasetů, s nimiž autoři pracují odděleně, resp. provádí dílčí evaluaci na každém z těchto datasetů. Celkem mají k dispozici 159 FLAIR snímků pacientů. Jednotlivé snímky jsou pořízeny na zařízení s magnetickým polem 1.5 T i 3 T. Snímky mají různé tloušťky řezu i různé \alert{in-plane} rozlišení.
+
+V rámci preprocessingu byla ze snímků všech pacientů odstraněna lebka, nicméně autoři zmiňují, že tak dělají kvůli tomu, aby zajistili konzistenci dat, jelikož část snímků měli autoři k dispozici již s odstraněnou lebkou. Následně byly snímky registrovány na atlas \cite{LEMAITRE2005900} představující mozek lidí ve věku mezi 63 a 75 lety. Expertní segmentace autoři interpolovali do nového prostoru, aby odpovídali registrovaným snímkům. Intenzity voxelů byly normalizovány pro každého pacienta.
+
+Navržená metoda je rozdělena do dvou fází. Spočívá v určení pravděpodobností, zda daný voxel obsahuje lézi nebo zda je tkáň zdravá. Následně mapa pravděpodobností vstupuje do druhého stupně algoritmu, který je založen na \alert{Markovovských náhodných polích}. Výstupem je segmentace každého voxelu do jedné ze čtyř tříd - mozkomíšní mok, šedá hmota mozková, bílá hmota mozková nebo léze. Významem druhého stupně této segmentační metody je převáhování původní pravděpodobnostní mapy, která je výstupem prvního stupně tak, aby byl vzat v úvahu i lokální kontext a textura voxelů. To by dle autorů mělo vylepšit segmentaci hranice lézí.
+
+V první fázi segmentace autoři používají diskrétní 2D Gaborovu transformaci \cite{ZIBULSKI1997188}. Tato transformace se aplikuje konvolucí Gaborovských okének, které jsou funkcí orientace a fáze. Výstupem této konvoluce je potom informace o energii v obraze pro daný směr a danou frekvenci. Z výstupu transformace je naučen Bayesovský klasifikátor, jehož výstupem je pravděpodobnostní mapa.
+
+Druhá fáze klasifikace je založena na Markovovských náhodných polích (MRF). Autoři vycházeli z tzv. Pottsova modelu, který je rozšířením MRF pro klasifikaci do více než dvou tříd \cite{koller2009probabilistic}. Pottsův model byl přizpůsoben právě tak, aby bral v potaz okolní texturu klasifikovaného voxelu. Při trénování modelu autoři uvažují 8 sousedů in-plane a korespondující voxely o vrstvu snímku výš a vrstvu níž.
+
+Během evaluace autoři své řešení porovnávají i se dvěma nejlepšími metodami z ISLES 2015 - DeepMedic založené na neuronových sítích a CN-Neu založené na klastrování, které jsem již v této práci představil v kapitole \ref{lbl-DeepMedic} a \ref{lbl-cnNeu}. Vyhodnocení proběhlo metodou leave-one-patient-out.
+
+Kvalitativní výsledky studie ukázaly, že metoda je schopná úspěšně segmentovat léze různé velikosti a v různých polohách, včetně komplexních struktur léze. Proti metodě fuzzy c-means clusteringu uvedená metoda dosahuje lepších výsledků při výskytu periventrikulární hyperintenzity ve FLAIR obraze, který není součástí segmentované mrtvice. Porovnání jednotlivých výsledků včetně falešné segmentace c-means metody je ukázáno na obrázku \ref{img-mrf_vs_isles}.
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=1\textwidth]{mrf_vs_isles}
+	\caption{Kvantitativní porovnání výsledků s metodami z ISLES 2015. A zobrazuje původní FLAIR obrazy. B vyznačuje segmentaci navrženou metodou Markovovských náhodných polí. C ukazuje segmentaci neuronovou sítí představenou jako DeepMedic. D ukazuje segmentaci pomocí klasteringu c-means.}
+	\label{img-mrf_vs_isles}
+\end{figure}
+
+Kvantitativní výsledky ukázaly, že metoda Dice koeficientem vykazuje pro všechny datasety použité ve studii podobné výsledky, avšak u jednoho z datasetů významně podhodnocuje objem segmentované léze. Dataset s podhodnocenými objemy obsahuje 102 snímků a expertní segmentace uvádí objemy lézí u pacienta v průměru 42.95 ± 57.6 ml. Zatím co automaticky osegmentovaný objem činí průměrně 26.82 ± 41.37 ml na pacienta. Právě objem léze je dle autorů jedním z nejdůležitějších údajů, který se snaží díky segmentaci získat, jelikož se používá při klinických testech nové léčby. Dále se ukázalo, že podhodnocení objemu je tím výraznější, čím větší je léze. Srovnání výkonu jednotlivých metod při testování na stejných datasetech je uvedeno v tabulce \ref{tbl-mrf}.
+\begin{table}[]
+	\centering
+	\begin{tabular}{lccc}
+		\multicolumn{1}{c}{\textbf{Method}} & \textbf{DC}   & \textbf{ASD (mm)} & \textbf{HD (mm)} \\ \hline
+		Markovovská náhodná pole            & 0.582 ± 0.250 & 7.56 ± 9.29       & 35.38 ± 25.97    \\ \hline
+		DeepMedic                          & 0.541 ± 0.272 & -                 & -                \\ \hline
+		C-means                             & 0.524 ± 0.287 & -                 & -                \\ \hline
+	\end{tabular}
+	\caption{Vážený průměr Dice koeficientu, average surface distance a Hausdorffská vzdálenost pro navrženou metodu používající Markovovská náhodná pole, metodu hlubokých neuronových sítí DeepMedic a metodu fuzzy klasteringu c-means z ISLES 2015. Vážený průměr byl získán průměrováním dílčích výsledků testování uvedených metod na různých datasetech.}
+	\label{tbl-mrf}
+\end{table}
+
+Měření výkonu na malých lézích (pod 1 ml) autoři provedli zkoumáním okolí dané komponenty (uzavřené oblasti léze). Pokud v 26-voxelovém okolí expertně osegmentované léze ležely alespoň tři voxely osegmentované automatickou metodou, byla segmentace považována za pravdivě pozitivní segmentaci. Na druhou stranu, pokud byla segmentována komponenta léze automatickou metodou a ležely v ní méně než 3 voxely expertní segmentace, byla segmentace považována za falešně pozitivní. Touto metrikou bylo vyhodnoceno, že 258 z 483 lézí menších než 1 ml bylo klasifikováno korektně a 81 lézí falešně pozitivně.
+
+Při srovnání výsledků s DeepMedic bylo zjištěno 239 pravdivě pozitivně segmentovaných malých lézí, což je podobný výsledek jako u metody Markovovských náhodných polí. Vyskytuje se u ní ale značně vyšší počet falešně segmentovaných lézí, nichž je 131. Naopak metoda fuzzy c-means z ISLES 2015 nalezla 209 pravdivě pozitivně segmentovaných lézí, což je méně, než uvedená metoda. Fuzzy c-means měla 84 falešně pozitivních segmentací, což je zhruba stejný počet jako u uvedené metody.
+
+Autoři zmiňují, že výsledky nelze přímo srovnávat s jinými metodami, jelikož k tréninku a evaluaci ostatních metody byla použita jiná data. Přesto poznamenávají, že došly k podobným výsledkům jako jiné publikované metody. Navíc zmiňují, že dosáhly srovnatelných výsledků jako nejlepší metody na soutěži ISLES 2015, kde však měli soutěžící k dispozici multimodální data, zatím co uvedená metoda pracuje pouze s FLAIR snímky. Nejlepší dílčí výsledky byly dosaženy touto metodou na datasetu, jehož snímky byly pořízeny pouze jedním skenerem s magnetickým polem 3 T a v diskuzi se autoři zmiňují, že právě tato konzistence a rozlišení můžou zlepšit úspěšnost při testování automatické metody.
+
+Dále autoři zmiňují, že nejhoršího Dice koeficientu dosáhly při testování u datasetu, jenž byl převzorkovaný a díky tomu vznikly významné interpolační artefakty.
+
+Jako největší nevýhodu autoři vidí právě ono podhodnocování objemu, díky němuž není metoda zatím optimální. V případě dalšího vývoje této metody autoři doporučují se zaměřit na tento problém a zmiňují, že textura je důležitá pro jádro léze, zatím co kontrast voxelů je důležitý pro určení hranice léze.
+
+\subsection{title}
+
+\section{Dataset}
+\subsection{ISLES 2022}
+Kromě soutěže ISLES 2015, která byla první svého druhu a již jsem ji popsal výše, proběhlo několik dalších ročníků ISLES.
+
+V roce 2016 byla soutěž zaměřená na predikci segmentace po 3 až 9 měsících od mrtvice a regresi predikující klinický dopad mrtvice. Tyto predikce byly vytvořeny ze snímků akutní mrtvice a klinických dat: doba od vzniku mrtvice, doba do zahájení léčby a TICI skóre, hodnotící úspěšnost léčby. V roce 2017 byla soutěž opět zaměřena na vytváření predikce segmentace z akutní mrtvice. V roce 2018 bylo cílem vytvoření segmentace akutní mrtvice, ale vstupní modalitou byla tentokrát CT perfuze. Motivací je dostupnost a rychlost vytvoření skenu z CT, díky těmto výhodám se CT používá pro triáž pacientů s mrtvicí.
+
+Poslední a stále běžící soutěží je ISLES 2022 \cite{isles2022}. Ta je podobně jako ISLES 2015 rozdělena na dvě kategorie. První kategorií je multimodální fMRI segmentace akutní a subakutní mrtvice. Druhou kategorií je segmentace akutní, subakutní a chronické mrtvice ze snímků T1-vážený. Jelikož se tato práce zabývá primárně multimodální segmentací, v dalších částech této práce budu pod označením ISLES 2022 uvažovat pouze první kategorii této soutěže.
+
+ISLES 2022 se liší od předchozích soutěží v tom, že je zaměřená i na segmentace \alert{mnohočetných embolií a kortikální infarkty (mechanická rekanalizace)}, snímky jsou pořízeny jak před, tak po intervenční léčbě a dataset obsahuje mnohem více dat, jak dataset ISLES 2015. Výše popsané rozdíly zapříčiňují poměrně vysokou komplexitu lézí.
+
+V trénovacím a veřejně dostupném datasetu ISLES 2022 se vyskytuje 250 pacientů. V testovacím neveřejném datasetu jsou skeny 150 pacientů. Pro každého pacienta je k dispozici DWI (až b=1000 mm\textsuperscript{2}) sekvence, ADC sekvence a FLAIR sekvence. Skeny byly pořízeny na dvou zařízeních se silou magnetického pole 3 T a z jednoho zařízení se silou 1.5 T. V datasetu je poznamenáno, z jakého zdravotnického zařízení byl daný sken pořízen, společně s parametry ve formátu DICOM hlavičky, kde je možné nalézt podrobnosti k nastavení, podle kterého byl sken pořízen.
+
+Suma objemu lézí u jednoho pacienta je průměrně 26.38 ml, největší objem ischemické tkáně je 482.15 ml. Průměr objemu jedné (souvislé) léze je 2.90 ml, přičemž nejmenší léze je velká 0.01 ml a největší 477.23 ml. Průměrný počet lézí u jednoho pacienta je 9.11, pacient s největším počtem má 126 lézí. Pro diverzitu jsou v trénovacím datasetu zahrnuti tři pacienti, u kterých se mrtvice nepotvrdila.
+
+Expertní segmentace v tomto případě byla provedena hybridně, kvůli velkému počtu pacientů zahrnutých do datasetu. Nejprve tedy autoři natrénovali 3D UNet \cite{3DUnet} na DWI sekvenci snímků z jednoho ze zdravotnických center, pro které již existovaly anotace. Následně autoři vytvořili prvotní segmentace pro ostatní data. Tyto prvotní segmentace byly dále upraveny mediky a následně dokorigovány neuroradiology a schváleny neuroradiology s více jak desetiletou praxí. Se ziskem kvalitních segmentací byl dále dotrénován UNet pro zkvalitnění prvotních segmentací, které ještě nebyly manuálně upraveny.
+
+Automatická segmentace pomocí UNetu byla provedena pouze na základě DWI sekvence, ale manuální expertní segmentace byla provedena s využitím znalostí ze všech dostupných modalit a proto i algoritmus, resp. soutěžící by měli využívat všech modalit, aby bylo možné dosáhnout stejného výsledku jako je anotace. Autoři explicitně zmiňují, že DWI sekvence byla použita pro segmentaci jako primární.
+
+V rámci postprocessingu, před publikováním datasetu, bylo provedeno několik kroků. Nejprve byla provedena pomocí Elastix \cite{elastix} rigidní registrace FLAIR na DWI. Díky tomu mohla být proveden skull-stripping pomocí algoritmu HD-BET \cite{hd-bet}. Nakonec byly snímky transformovány zpět do jejich nativního prostoru.
+
+Pro ověření a porozumění dopadů anotací mnoha experty autoři soutěže provedli inter-rater analýzu. Z původního datasetu vybrali 10 reprezentativních skenů, které předložili dvěma expertům - neuroradiologům, k segmentaci. Ukázalo se, že Dice koeficient expertů proti segmentaci ISLES 2022 je průměrně 0.90, což odpovídá rozdílu v 2.37 ml objemu léze. Druhý expert proti ISLES 2022 dosáhl Dice 0.86, což odpovídá rozdílu 6.56 ml. Dice koeficient vůči těmto dvěma expertům navzájem je průměrně 0.83, což odpovídá objemu 7.22 ml.
+
+Výsledky soutěže jsou sice veřejné, nicméně metody, které autoři používají, nejsou obecně zveřejněny. Nejlepší tým v soutěži dosahuje Dice koeficientu 0.96. V tabulce výsledků existuje jediná metoda, která má zveřejněnou implementaci. Tuto metodu vytvořil Shengbo Gao s týmem Seals \cite{seals} a dosahuje Dice koeficientu 0.92. Autoři uvádí jen návod, jak použít jejich metodu, ale bohužel nemají k dispozici článek ani abstrakt popisující jejich metodu. Pouze uvádí, že vychází z metody nnUNet \cite{nnUNet}.
+
 %\begin{itemize}
 %	\item FLAIR vs DWI
 %	\item Nifti - popis, registrace
 %	\item Možnosti rozšíření datasetu (stažení dalších dat, augmentace)
-%\end{itemize}
+%\end{itemize}bibtex underscore
 %
 %\section{Manuální segmentace}
 %popsat aktuální proces segmentace experta
@@ -237,6 +331,7 @@ Studie \cite{Subbanna2019} se zaměřuje na segmentaci sub-akutní ischemické l
 %	\item ISLES
 %	\item 2D vs 3D segmentace
 %\end{itemize}
+% 
 
 \printbibliography
 

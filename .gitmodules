@@ -1,0 +1,3 @@
+[submodule "deepmedic"]
+	path = deepmedic
+	url = https://github.com/deepmedic/deepmedic.git
