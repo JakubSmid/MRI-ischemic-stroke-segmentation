@@ -162,6 +162,8 @@ Autoři používají malá konvoluční jádra a tím snižují nároky na GPU p
 
 Tato metoda po vyhodnocení ISLES 2015 byla a je stále aktivně vyvíjena. V roce 2017 DeepMedic byl součástí výherního řešení soutěže BRATS 2017, jejímž cílem je segmentace nádorů na mozku. \cite{Kamnitsas_2017, kamnitsas2017ensembles}
 
+Tuto metodu jsem zprovoznil na Ubuntu 22.04 s grafickou kartou NVIDIA GeForce MX130 s driverem verze 545.23.08 a CUDA 12.3. Kvůli kompatibilitě balíčků a kódu jsem použil nibabel==3.2.2, matplotlib==3.5 a tensorflow==2.15.0.
+
 \subsubsection{CN-Neu (Chaolu Feng) \cite{cn-neu}}
 \label{lbl-cnNeu}
 Tato metoda nepotřebuje žádná trénovací data, jelikož k segmentaci používá fuzzy c-means. Pro každou vstupní sekvenci proběhne segmentace na bílou hmotu, šedou hmotu mozkovou, mozkomíšní mok a lézi. Za lézi je následně určen ten voxel, který byl označen za lézi ve FLAIR sekvenci a zároveň alespoň v nějaké další sekvenci. Nakonec autoři upraví hranice léze podle vlastního algoritmu, jež je matematicky formulován v citovaném článku.

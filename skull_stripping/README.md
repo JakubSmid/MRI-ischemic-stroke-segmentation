@@ -1,0 +1,4 @@
+# Skull-stripping
+Raw images in the Motol dataset contains skull, but the brain mask is not available. Because there are co-registered images we can use HD-BET tool for skull-stripping. First we need to run `extract_FLAIR.py` which copies FLAIR images from Motol dataset data structure to the `skull_stripping/Motol_FLAIR/` directory, because for the HD-BET we need to have all images in the same directory. Then we can run HD-BET. After that we obtain brain masks so we can run `import_BET.py` to copy brain masks back to the Motol dataset structure.
+
+Please clone repository [HD-BET](https://github.com/MIC-DKFZ/HD-BET) and load following modules `ml PyTorch/1.12.0-foss-2021b-CUDA-11.4.1 SimpleITK/2.1.1.2-foss-2021b scikit-image/0.19.1-foss-2021b`.

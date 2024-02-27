@@ -1,26 +1,27 @@
-# Automatic MRI segmentation of ischemic stroke
+# Automated Segmentation of Brain Ischemic Stroke
 [Project report in PDF](./doc_project/project.pdf)
 
-## Notes
-- [Data augmentation and preprocessing using TorchIO](https://www.imaios.com/en/resources/blog/ai-for-medical-imaging-using-torchio-python)
+# DeepMedic
+For running DeepMedic, please preprocess the data using the provided script in `./datasets/` folder.
 
-## Dataset
-### ISLES-2022
+# Dataset
+In this work we are using following datasets: Motol, ISLES 2022 and ISLES 2015. The dataset folders should be located in `./datasets/` and it contains unmodified data. For the ISLES 2022 and 2015 original folder structure is preserved. 
 
-### Motol
-Dataset is provided by Second Faculty of Medicine CUNI, Prague.\
-For this work we need FLAIR and DWI2 files in NIfTI format with .nii extension. Data should be already registered using SPM software.
+## Motol dataset
+Motol dataset is provided by Second Faculty of Medicine CUNI, Prague.
 
-Shape of each layer in dataset is (448, 448, 208). 
+In this work, we are using only FLAIR and DWI images and corresponding lesion masks thus only these files were included. Images in the Motol dataset are co-registered with SPM software.
 
-In folder `dataset` there are folders with code of particular patient. Because there are available scans in three different time points we have in each patient folder three other folders with name in following format: `Anat_YYYYMMDD`. In each Anat folder there are three files:
+In folder `./datasets/Motol` there are folders with the code of a particular patient. Because there are available scans in three different time points we have in each patient folder three other folders with names in the following format: `Anat_YYYYMMDD`. In each Anat folder there are three files:
 - `rFlair.nii` - FLAIR image
-- `rDWI2.nii` - DWI2 image
+- `rDWI2.nii` - DWI image
 - `Leze_FLAIR_DWI2.nrrd` - manual lesion segmentation by the expert
 
-### Scheme of data structure
+After performing skull-stripping, each Anat folder contains also brain mask.
+
+### Expected folder structure
 ```
-dataset   
+./datasets/Motol/
 │ 
 └─── 98994
 │   │
