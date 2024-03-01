@@ -11,3 +11,5 @@ In this folder there are two executable scripts:
 nrrd nema velikost:
 - 2159624/Anat_20211008 
 - 2290867/Anat_20230109
+
+2282310 - vsechny snimky vypadaji divne, nrrd je ok

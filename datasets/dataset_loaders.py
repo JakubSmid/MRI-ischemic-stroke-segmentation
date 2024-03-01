@@ -46,6 +46,9 @@ class Motol():
         self.anats = []
 
         for patient_folder in os.listdir(dataset_folder):
+            # skip corrupted
+            if patient_folder == "2282310":
+                continue
             for anat in os.listdir(f'{dataset_folder}/{patient_folder}'):
                 # skip corrupted data
                 corrupted = ["Anat_20211008","Anat_20230109"]

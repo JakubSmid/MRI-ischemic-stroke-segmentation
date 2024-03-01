@@ -80,16 +80,22 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
         statistics["volume_ml"].append(volume)
         statistics["number_of_components"].append(components.max())
 
-        # brain extraction
+        # brain extraction: use HD-BET output or filter values greater than 0
         if BETmasks is not None:
-            BETmask = nib.load(BETmasks[i-1])
-            flair = nib.Nifti1Image(flair.get_fdata() * BETmask.get_fdata(), affine=flair.affine, dtype=flair.get_data_dtype())
-            mask = nib.Nifti1Image(mask.get_fdata() * BETmask.get_fdata(), affine=mask.affine, dtype=mask.get_data_dtype())
-            dwi = nib.Nifti1Image(dwi.get_fdata() * BETmask.get_fdata(), affine=dwi.affine, dtype=dwi.get_data_dtype())
+            ROImask = nib.load(BETmasks[i-1])
+            flair = nib.Nifti1Image(flair.get_fdata() * ROImask.get_fdata(), affine=flair.affine, dtype=flair.get_data_dtype())
+            dwi = nib.Nifti1Image(dwi.get_fdata() * ROImask.get_fdata(), affine=dwi.affine, dtype=dwi.get_data_dtype())
+            mask = nib.Nifti1Image(mask.get_fdata() * ROImask.get_fdata(), affine=mask.affine, dtype=mask.get_data_dtype())
+        elif fixed == "flair":
+            ROImask = nib.Nifti1Image((flair.get_fdata() > 0) * 1, affine=flair.affine, dtype="mask")
+        elif fixed == "dwi":
+            ROImask = nib.Nifti1Image((dwi.get_fdata() > 0) * 1, affine=dwi.affine, dtype="mask")
 
-        # reshape mask
+        # reshape masks
         mask = trim_zero_padding(mask)
+        ROImask = trim_zero_padding(ROImask)
         mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
+        ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
 
         if fixed == "flair":
             # reshape fixed image
@@ -116,16 +122,20 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
         flair = ants.to_nibabel(flair)
         dwi = ants.to_nibabel(dwi)
 
-        # normalize scans
-        n_flair = (flair.get_fdata() - flair.get_fdata().mean()) / flair.get_fdata().std()
-        n_dwi = (dwi.get_fdata() - dwi.get_fdata().mean()) / dwi.get_fdata().std()
+        # normalize scans within ROI
+        n_flair = flair.get_fdata()[ROImask.get_fdata() == 1]
+        n_flair = (flair.get_fdata() - n_flair.mean()) / n_flair.std()
+        n_dwi = dwi.get_fdata()[ROImask.get_fdata() == 1]
+        n_dwi = (dwi.get_fdata() - n_dwi.mean()) / n_dwi.std()
         flair = nib.Nifti1Image(n_flair, affine=flair.affine, dtype=flair.get_data_dtype())
         dwi = nib.Nifti1Image(n_dwi, affine=dwi.affine, dtype=dwi.get_data_dtype())
 
         # check dimensions, mean and std
         assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
-        assert np.allclose(flair.get_fdata().mean(), 0) and np.allclose(flair.get_fdata().std(), 1), f"Mean and std of flair image are not 0 and 1: {flair.get_fdata().mean()}, {flair.get_fdata().std()}"
-        assert np.allclose(dwi.get_fdata().mean(), 0) and np.allclose(dwi.get_fdata().std(), 1), f"Mean and std of dwi image are not 0 and 1: {dwi.get_fdata().mean()}, {dwi.get_fdata().std()}"
+        assert np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
+            f"Mean and std within ROI of flair image are not 0 and 1: {flair.get_fdata()[ROImask.get_fdata() == 1].mean()}, {flair.get_fdata()[ROImask.get_fdata() == 1].std()}"
+        assert np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
+            f"Mean and std within ROI of dwi image are not 0 and 1: {dwi.get_fdata()[ROImask.get_fdata() == 1].mean()}, {dwi.get_fdata()[ROImask.get_fdata() == 1].std()}"
 
         # check error after preprocessing
         mask_interpol = nibabel.processing.resample_from_to(mask, orig_mask, order=0)
@@ -139,6 +149,7 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
         nib.save(mask, f"{output_folder}/{dataset_name}/{name}/mask.nii.gz")
         nib.save(flair, f"{output_folder}/{dataset_name}/{name}/flair.nii.gz")
         nib.save(dwi, f"{output_folder}/{dataset_name}/{name}/dwi.nii.gz")
+        nib.save(ROImask, f"{output_folder}/{dataset_name}/{name}/ROImask.nii.gz")
 
     # save statistics
     pd.DataFrame(statistics).to_excel(f"{output_folder}/{dataset_name}_statistics.ods", index=False)
