@@ -87,7 +87,4 @@ def nrrd_to_nifti(nrrd_path: str, affine: np.ndarray) -> tuple[nib.Nifti1Image, 
     nifti_flair = nib.Nifti1Image(flair_mask, affine=affine)
     nifti_dwi = nib.Nifti1Image(dwi_mask, affine=affine)
 
-    nifti_flair.set_data_dtype("mask")
-    nifti_dwi.set_data_dtype("mask")
-
     return nifti_flair, nifti_dwi
