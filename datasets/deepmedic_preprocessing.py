@@ -34,23 +34,13 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
     - None
     """
     assert fixed in ["flair", "dwi"], "fixed must be 'flair' or 'dwi'"
-    statistics = {
-        "name": [],
-        "shape_flair": [],
-        "shape_dwi": [],
-        "voxel_dim_flair": [],
-        "voxel_dim_dwi": [],
-        "volume_ml": [],
-        "number_of_components": [],
-        "dice_after_preprocessing": [],
-    }
-    N = len(flair_images)
-    i = 0
+    df_cases = pd.DataFrame()
+    df_components = pd.DataFrame()
 
-    for flair_image, dwi_image, fixed_mask, name in zip(flair_images, dwi_images, masks, case_names):
+    N = len(flair_images)
+    for i, (flair_image, dwi_image, fixed_mask, name) in enumerate(zip(flair_images, dwi_images, masks, case_names)):
         # print progress
-        i += 1
-        print(f"{dataset_name}: Processing {name} ({i}/{N})...")
+        print(f"{dataset_name}: Processing {name} ({i+1}/{N})...")
 
         # load images
         flair = nib.load(flair_image)
@@ -65,26 +55,42 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
             mask = nib.load(fixed_mask)
         orig_mask = mask
 
-        # compute statistics
+        # compute components
         components = cc3d.connected_components(mask.get_fdata(), connectivity=26)
+        for component in np.unique(components)[1:]:
+            if fixed == "flair":
+                volume = voxel_count_to_volume_ml(np.count_nonzero(components == component), flair.header.get_zooms())
+            elif fixed == "dwi":
+                volume = voxel_count_to_volume_ml(np.count_nonzero(components == component), dwi.header.get_zooms())
+            stats = {
+                "name": name,
+                "volume_ml": volume
+            }
+            df_components = pd.concat([df_components, pd.DataFrame([stats])])
+
+        # compute volumes
         if fixed == "flair":
             volume = voxel_count_to_volume_ml(np.count_nonzero(mask.get_fdata()), flair.header.get_zooms())
         elif fixed == "dwi":
             volume = voxel_count_to_volume_ml(np.count_nonzero(mask.get_fdata()), dwi.header.get_zooms())
 
-        # add statistics to dictionary
-        statistics["name"].append(f"{name}")
-        statistics["shape_flair"].append(flair.shape)
-        statistics["shape_dwi"].append(dwi.shape)
-        statistics["voxel_dim_flair"].append(flair.header.get_zooms())
-        statistics["voxel_dim_dwi"].append(dwi.header.get_zooms())
-        statistics["volume_ml"].append(volume)
-        statistics["number_of_components"].append(components.max())
+        # save metadata to dict
+        stats = {
+            "name": name,
+            "shape_flair": flair.shape,
+            "shape_dwi": dwi.shape,
+            "voxel_dim_flair": flair.header.get_zooms(),
+            "voxel_dim_dwi": dwi.header.get_zooms(),
+            "lesion_volume_ml": volume
+        }
+        if ".nrrd" in fixed_mask:
+            stats["flair_lesion_volume_ml"] = voxel_count_to_volume_ml(np.count_nonzero(mask_flair.get_fdata()), flair.header.get_zooms())
+            stats["dwi_lesion_volume_ml"] = voxel_count_to_volume_ml(np.count_nonzero(mask_dwi.get_fdata()), flair.header.get_zooms())
 
         # brain extraction: use HD-BET output or filter values greater than 0
         # If BET masks are provided, images have to be co-registered!
         if BETmasks is not None:
-            ROImask = nib.load(BETmasks[i-1])
+            ROImask = nib.load(BETmasks[i])
             # DeepMedic bug workaround: recasting ROI from uint8 to int8
             ROImask = nib.Nifti1Image(ROImask.get_fdata().astype(np.int8), affine=ROImask.affine)
             flair = nib.Nifti1Image(flair.get_fdata() * ROImask.get_fdata(), affine=flair.affine)
@@ -98,6 +104,8 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
         elif fixed == "dwi":
             ROImask = nib.Nifti1Image((dwi.get_fdata() > 0).astype(np.int8), affine=dwi.affine)
 
+        stats["bet_mask_volume_ml"] = voxel_count_to_volume_ml(np.count_nonzero(ROImask.get_fdata()), ROImask.header.get_zooms())
+        
         # reshape masks
         ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
         mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
@@ -146,7 +154,8 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
 
         # check error after preprocessing
         mask_interpol = nibabel.processing.resample_from_to(mask, orig_mask, order=0)
-        statistics["dice_after_preprocessing"].append(dice_coefficient(orig_mask, mask_interpol))
+        stats["dice_after_preprocessing"] = dice_coefficient(orig_mask, mask_interpol)
+        df_cases = pd.concat([df_cases, pd.DataFrame([stats])])
 
         # prepare folder
         if not os.path.exists(f"{output_folder}/{dataset_name}/{name}"):
@@ -161,8 +170,10 @@ def deepmedic_preprocess(flair_images: tuple[str, ...],
             nib.save(mask_flair, f"{output_folder}/{dataset_name}/{name}/mask_flair.nii.gz")
             nib.save(mask_dwi, f"{output_folder}/{dataset_name}/{name}/mask_dwi.nii.gz")
 
-    # save statistics
-    pd.DataFrame(statistics).to_excel(f"{output_folder}/{dataset_name}_statistics.ods", index=False)
+    # save dataframes
+    with pd.ExcelWriter(f"{output_folder}/{dataset_name}_metadata.ods") as writer:
+        df_cases.to_excel(writer, sheet_name="cases", index=False)
+        df_components.to_excel(writer, sheet_name="components", index=False)
 
 if __name__ == "__main__":
     # load datasets
