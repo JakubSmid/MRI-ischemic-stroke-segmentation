@@ -17,5 +17,5 @@ motol = dataset_loaders.Motol()
 if not os.path.exists('skull_stripping/Motol_FLAIR'):
     os.mkdir('skull_stripping/Motol_FLAIR')
 
-for flair, patient_folder, anat in zip(motol.flairs, motol.patient_folders, motol.anats):
-    shutil.copy(flair, f"skull_stripping/Motol_FLAIR/{patient_folder}_{anat}.nii")
+for flair, name in zip(motol.flairs, motol.names):
+    shutil.copy(flair, f"skull_stripping/Motol_FLAIR/{name}.nii.gz")

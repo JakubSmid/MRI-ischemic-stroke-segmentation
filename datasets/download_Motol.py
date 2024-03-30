@@ -6,34 +6,19 @@ for this project from NAS database.
 import shutil
 import os
 
-input_folder = "nas_data/"
-output_folder = "usb_stick/"
-
-patient_number_to_copy = [
-    "98994",
-    "2290116",
-    "2173586",
-    "145035",
-    "2179097",
-    "2260503",
-    "2282310",
-    "2290867"]
+input_folder = "/run/user/1000/gvfs/smb-share:server=195.113.42.186,share=data3/motol3Texp/BEAST3/"
+output_folder = "Motol/"
 
 files_to_copy = [
-    "rDWI1.nii",
     "rDWI2.nii",
     "rFlair.nii",
-    "rqT1.nii",
-    "rSWI.nii",
-    "rT1.nii",
-    "rT1KL.nii",
-    "c1rT1.nii",
-    "c2rT1.nii",
-    "c3rT1.nii",
-    "Leze_FLAIR_DWI2.nrrd"]
+    "Leze_FLAIR_DWI2.nrrd",
+    "Leze_FLAIR_DWI.nrrd"]
 files_to_copy = [f.lower() for f in files_to_copy]
 
-for folder in patient_number_to_copy:
+for folder in os.listdir(input_folder):
+    if not folder.isnumeric():
+        continue
     for root, dirs, files in os.walk(input_folder + folder):
         files = os.listdir(root)
         files = [f for f in files if os.path.isfile(root+'/'+f)]

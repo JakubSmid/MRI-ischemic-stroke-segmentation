@@ -2,19 +2,33 @@ import numpy as np
 import nibabel as nib
 import nrrd
 
-def dice_coefficient(y_true: nib.Nifti1Image, y_pred: nib.Nifti1Image) -> float:
+def x_without_y(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
-    Calculate the Dice coefficient between two Nifti1Image masks.
+    Generate a new array by performing a logical AND operation between `x` and the negation of `y`.
     
     Args:
-    - y_true: a Nifti1Image object representing the ground truth segmentation
-    - y_pred: a Nifti1Image object representing the predicted segmentation
+        x (np.ndarray): The first input array.
+        y (np.ndarray): The second input array.
+        
+    Returns:
+        np.ndarray: The resulting array.
+    """
+    return np.logical_and(x, np.logical_not(y)) * 1
+
+def dice_coefficient(y_true: nib.Nifti1Image|np.ndarray, y_pred: nib.Nifti1Image|np.ndarray) -> float:
+    """
+    Calculate the Dice coefficient between two Nifti1Image or numpy masks.
+    
+    Args:
+    - y_true: a numpy array or a Nifti1Image object representing the ground truth segmentation
+    - y_pred: a numpy array or a Nifti1Image object representing the predicted segmentation
     
     Returns:
     - float: the Dice coefficient
     """
-    y_true = y_true.get_fdata()
-    y_pred = y_pred.get_fdata()
+    if type(y_true) == nib.Nifti1Image and type(y_pred) == nib.Nifti1Image:
+        y_true = y_true.get_fdata()
+        y_pred = y_pred.get_fdata()
     intersection = np.count_nonzero(y_true * y_pred)
     if y_pred.sum() == 0 and y_true.sum() == 0:
         return 1
