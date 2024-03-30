@@ -14,9 +14,9 @@ class ISLES2015():
             dwi = next(filter(lambda x: "DWI" in x, scan_folders))
             mask = next(filter(lambda x: "OT" in x, scan_folders))
 
-            self.flairs.append(f"{dataset_folder}/{patient_folder}/{flair}/{flair}.nii")
-            self.dwis.append(f"{dataset_folder}/{patient_folder}/{dwi}/{dwi}.nii")
-            self.masks.append(f"{dataset_folder}/{patient_folder}/{mask}/{mask}.nii")
+            self.flairs.append(f"{dataset_folder}/{patient_folder}/{flair}/{flair}.nii.gz")
+            self.dwis.append(f"{dataset_folder}/{patient_folder}/{dwi}/{dwi}.nii.gz")
+            self.masks.append(f"{dataset_folder}/{patient_folder}/{mask}/{mask}.nii.gz")
             self.names.append(f"{patient_folder}")
 
 class ISLES2022():
