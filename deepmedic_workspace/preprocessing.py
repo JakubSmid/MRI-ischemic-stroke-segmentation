@@ -94,7 +94,7 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         # load BET mask
         # assume BET masks are co-registered to FLAIR!
         ROImask = nib.load(BET_mask)
-        ROImask = nib.Nifti1Image(ROImask.get_fdata().astype(np.int8), affine=ROImask.affine) # DeepMedic bug workaround: recasting ROI from uint8 to int8
+        ROImask.set_data_dtype(np.int8) # DeepMedic bug workaround: recasting ROI from uint8 to int8
         
         # reshape masks
         ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
@@ -183,6 +183,7 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
         mask = nib.load(fixed_mask)
+        mask.set_data_dtype(np, np.int8) # ISLES2022 is float64 by default
         orig_mask = mask
 
         # compute components
