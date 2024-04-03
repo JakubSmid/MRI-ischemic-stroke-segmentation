@@ -17,7 +17,7 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
                                 dwi_images: tuple[str, ...],
                                 masks: tuple[str, ...],
                                 case_names: tuple[str, ...],
-                                BETmasks: tuple[str],
+                                BETmasks: tuple[str, ...],
                                 dataset_name: str = "Motol",
                                 output_folder: str = "deepmedic_workspace/preprocessed/"):
     """
@@ -43,7 +43,7 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         # print progress
         print(f"{dataset_name}: Processing {name} ({i+1}/{N})...")
 
-        # load images
+        # load images and masks
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
         mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask, flair.affine)
@@ -92,7 +92,7 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         dwi = ants.to_nibabel(dwi)
 
         # load BET mask
-        # assume BET masks are co-registered to FLAIR
+        # assume BET masks are co-registered to FLAIR!
         ROImask = nib.load(BET_mask)
         ROImask = nib.Nifti1Image(ROImask.get_fdata().astype(np.int8), affine=ROImask.affine) # DeepMedic bug workaround: recasting ROI from uint8 to int8
         

@@ -23,3 +23,5 @@ cd "$DIR/../deepmedic"
 ./deepMedicRun -model "$DIR/model/modelConfig_6layers_150FC.cfg" 	-train "$DIR/model/trainConfig_6layers_150FC.cfg" -dev cuda
 ./deepMedicRun -model "$DIR/model/modelConfig_7layers.cfg" 		-train "$DIR/model/trainConfig_7layers.cfg" -dev cuda
 ./deepMedicRun -model "$DIR/model/modelConfig_7layers_150FC.cfg" 	-train "$DIR/model/trainConfig_7layers_150FC.cfg" -dev cuda
+./deepMedicRun -model "$DIR/model/modelConfig_150FC_1L.cfg" 	-train "$DIR/model/trainConfig_150FC_1L.cfg" -dev cuda
+./deepMedicRun -model "$DIR/model/modelConfig_75FC.cfg" 		-train "$DIR/model/trainConfig_75FC.cfg" -dev cuda
