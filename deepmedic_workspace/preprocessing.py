@@ -14,12 +14,12 @@ from datasets.utils import *
 import datasets.dataset_loaders as dataset_loaders
 
 def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
-                                dwi_images: tuple[str, ...],
-                                masks: tuple[str, ...],
-                                case_names: tuple[str, ...],
-                                BETmasks: tuple[str, ...],
-                                dataset_name: str = "Motol",
-                                output_folder: str = "deepmedic_workspace/preprocessed/"):
+                               dwi_images: tuple[str, ...],
+                               masks: tuple[str, ...],
+                               case_names: tuple[str, ...],
+                               BETmasks: tuple[str, ...],
+                               dataset_name: str = "Motol",
+                               output_folder: str = "deepmedic_workspace/preprocessed/"):
     """
     Preprocesses the Motol dataset for the DeepMedic project.
 
@@ -149,12 +149,12 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         df_components.to_excel(writer, sheet_name="components", index=False)
 
 def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
-                         dwi_images: tuple[str, ...],
-                         masks: tuple[str, ...],
-                         case_names: tuple[str, ...],
-                         fixed: str,
-                         dataset_name: str,
-                         output_folder: str = "deepmedic_workspace/preprocessed/"):
+                               dwi_images: tuple[str, ...],
+                               masks: tuple[str, ...],
+                               case_names: tuple[str, ...],
+                               fixed: str,
+                               dataset_name: str,
+                               output_folder: str = "deepmedic_workspace/preprocessed/"):
     """
     A function to preprocess ISLES dataset images for deep learning analysis.
 
@@ -183,7 +183,11 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
         mask = nib.load(fixed_mask)
-        mask.set_data_dtype(np, np.int8) # ISLES2022 is float64 by default
+        # some ISLES2022 mask datatypes are floats -> recast
+        if fixed == "flair":
+            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=flair.affine)
+        elif fixed == "dwi":
+            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=dwi.affine)
         orig_mask = mask
 
         # compute components
