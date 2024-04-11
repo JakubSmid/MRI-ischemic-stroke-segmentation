@@ -146,7 +146,7 @@ class nnUNetTrainer(object):
         self.oversample_foreground_percent = 0.33
         self.num_iterations_per_epoch = 250
         self.num_val_iterations_per_epoch = 50
-        self.num_epochs = 1000
+        self.num_epochs = 500
         self.current_epoch = 0
         self.enable_deep_supervision = True
 
@@ -515,7 +515,7 @@ class nnUNetTrainer(object):
                                                *self.configuration_manager.patch_size),
                                               device=self.device),
                                    transforms=None)
-                g.save(join(self.output_folder, "network_architecture.pdf"))
+                g.save(join(self.output_folder, "network_architecture.ps2"), format="ps2")
                 del g
             except Exception as e:
                 self.print_to_log_file("Unable to plot network architecture:")

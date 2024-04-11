@@ -8,6 +8,7 @@ DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # activate venv
 cd "$DIR/../venv_nnunet/bin"
 . "activate"
+cd "$DIR"
 
 ml Seaborn tqdm scikit-learn scikit-image Pillow IPython PyTorch/2.1.2-foss-2023a-CUDA-12.1.1
 export PATH="~/.local/bin:$PATH"
