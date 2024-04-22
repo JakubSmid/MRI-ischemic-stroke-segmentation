@@ -44,8 +44,8 @@ class Motol():
         self.BETmasks = []
 
         for patient_folder in os.listdir(dataset_folder):
-            if patient_folder == "2290867":
-                # skip corrupted patient
+            if patient_folder == "2290867" or patient_folder == "898251":
+                # skip corrupted patients
                 continue
             for anat in os.listdir(f'{dataset_folder}/{patient_folder}'):
                 self.flairs.append(f"{dataset_folder}/{patient_folder}/{anat}/rFlair.nii.gz")

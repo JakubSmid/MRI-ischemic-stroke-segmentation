@@ -17,7 +17,8 @@ In folder `./Motol` there are folders with the code of a particular patient. Bec
 - `Leze_FLAIR_DWI2.nrrd` - manual lesion segmentation by the expert
 - `BETmask.nii.gz` - brain mask generated using HD-BET
 
-Case number `2290867` has corrupted lesion segmentation file inside one of the anat folders, thus whole patient is skipped by dataset loader.
+Case number `2290867` has corrupted lesion segmentation file inside one of the anat folders, thus whole patient is skipped by the dataset loader.
+Label of `898251/Anat_20220314` is not corresponding to any image, thus whole patient is skipped by the dataset loader.
 
 ### Folder structure
 ```

@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 import nrrd
 
-def x_without_y(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def subtract_masks(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Generate a new array by performing a logical AND operation between `x` and the negation of `y`.
     
@@ -65,7 +65,7 @@ def trim_zero_padding(MRI_image: nib.Nifti1Image) -> nib.Nifti1Image:
         MRI_image = MRI_image.slicer[min(xs):max(xs)+1,min(ys):max(ys)+1,min(zs):max(zs)+1]
     return MRI_image
 
-def nrrd_to_nifti(nrrd_path: str, affine: np.ndarray) -> tuple[nib.Nifti1Image, nib.Nifti1Image]:
+def nrrd_to_nifti(nrrd_path: str) -> tuple[nib.Nifti1Image, nib.Nifti1Image]:
     """
     Convert the data from an nrrd file to two Nifti1Image objects representing the FLAIR and DWI segments.
     
@@ -79,6 +79,16 @@ def nrrd_to_nifti(nrrd_path: str, affine: np.ndarray) -> tuple[nib.Nifti1Image, 
 
     # load nrrd
     data, header = nrrd.read(nrrd_path)
+    assert header["space"] == "left-posterior-superior", f"Space should be 'left-posterior-superior', but it is {header['space']}"
+    
+    d = 0
+    f = 0
+    for v in header.values():
+        if "DWI" in str(v).upper():
+            d += 1
+        if "FLAIR" in str(v).upper():
+            f += 1
+    assert d == 1 and f == 1, f"{nrrd_path}: There should be exactly one FLAIR and one DWI segment, but there are {f} FLAIR segments and {d} DWI segments"
 
     # find the FLAIR and DWI segments
     for key, value in header.items():
@@ -96,6 +106,15 @@ def nrrd_to_nifti(nrrd_path: str, affine: np.ndarray) -> tuple[nib.Nifti1Image, 
     # extract masks from nrrd
     flair_mask = np.where(data == int(flair_value), 1, 0)[int(flair_layer), :, :, :].astype(np.int8)
     dwi_mask = np.where(data == int(dwi_value), 1, 0)[int(dwi_layer), :, :, :].astype(np.int8)
+    
+    affine = np.zeros((4,4))
+    affine[:3, :3] = header["space directions"][1:].T
+    affine[3, 3] = 1
+    affine[:3, 3] = header["space origin"]
+
+    # to Left-Posterior-Superior
+    affine[0, :] *= -1
+    affine[1, :] *= -1
 
     # return nifti images
     nifti_flair = nib.Nifti1Image(flair_mask, affine=affine)
