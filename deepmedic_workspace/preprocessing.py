@@ -46,10 +46,10 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         # load images and masks
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
-        mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask, flair.affine)
+        mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask)
         mask = np.logical_or(mask_flair.get_fdata(), mask_dwi.get_fdata())
-        mask = nib.Nifti1Image(mask.astype(np.int8), affine=flair.affine)
-        orig_mask = mask
+        mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
+        orig_mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
 
         # compute components
         components = cc3d.connected_components(mask.get_fdata(), connectivity=26)
@@ -94,20 +94,15 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         # load BET mask
         # assume BET masks are co-registered to FLAIR!
         ROImask = nib.load(BET_mask)
-        ROImask.set_data_dtype(np.int8) # DeepMedic bug workaround: recasting ROI from uint8 to int8
         
         # reshape masks
-        ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask_flair = nibabel.processing.conform(mask_flair, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask_dwi = nibabel.processing.conform(mask_dwi, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        
+        ROImask = nibabel.processing.resample_from_to(ROImask, flair, order=0)
+        mask = nibabel.processing.resample_from_to(mask, flair, order=0)
+
         # apply BET mask
         flair = nib.Nifti1Image(flair.get_fdata() * ROImask.get_fdata(), affine=flair.affine)
         dwi = nib.Nifti1Image(dwi.get_fdata() * ROImask.get_fdata(), affine=dwi.affine)
         mask = nib.Nifti1Image((mask.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask.affine)
-        mask_flair = nib.Nifti1Image((mask_flair.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask_flair.affine)
-        mask_dwi = nib.Nifti1Image((mask_dwi.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask_dwi.affine)
 
         stats["bet_mask_volume_ml"] = voxel_count_to_volume_ml(np.count_nonzero(ROImask.get_fdata()), ROImask.header.get_zooms())
 
@@ -120,11 +115,14 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         dwi = nib.Nifti1Image(n_dwi, affine=dwi.affine)
 
         # check dimensions, mean and std
-        assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
         assert np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
             f"Mean and std within ROI of flair image are not 0 and 1: {flair.get_fdata()[ROImask.get_fdata() == 1].mean()}, {flair.get_fdata()[ROImask.get_fdata() == 1].std()}"
         assert np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
             f"Mean and std within ROI of dwi image are not 0 and 1: {dwi.get_fdata()[ROImask.get_fdata() == 1].mean()}, {dwi.get_fdata()[ROImask.get_fdata() == 1].std()}"
+        assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
+        assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
+        assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
+        assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # check error after preprocessing
         mask_interpol = nibabel.processing.resample_from_to(mask, orig_mask, order=0)
@@ -140,8 +138,6 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         nib.save(flair, f"{output_folder}/{dataset_name}/{name}/flair.nii.gz")
         nib.save(dwi, f"{output_folder}/{dataset_name}/{name}/dwi.nii.gz")
         nib.save(ROImask, f"{output_folder}/{dataset_name}/{name}/ROImask.nii.gz")
-        nib.save(mask_flair, f"{output_folder}/{dataset_name}/{name}/mask_flair.nii.gz")
-        nib.save(mask_dwi, f"{output_folder}/{dataset_name}/{name}/mask_dwi.nii.gz")
 
     # save dataframes
     with pd.ExcelWriter(f"{output_folder}/{dataset_name}_metadata.ods") as writer:
@@ -183,12 +179,9 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
         mask = nib.load(fixed_mask)
-        # some ISLES2022 mask datatypes are floats -> recast
-        if fixed == "flair":
-            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=flair.affine)
-        elif fixed == "dwi":
-            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=dwi.affine)
-        orig_mask = mask
+        orig_mask = nib.load(fixed_mask)
+
+        mask = nib.Nifti1Image(mask.get_fdata().round().astype(np.int8), affine=mask.affine)
 
         # compute components
         components = cc3d.connected_components(mask.get_fdata(), connectivity=26)
@@ -227,10 +220,6 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
 
         stats["bet_mask_volume_ml"] = voxel_count_to_volume_ml(np.count_nonzero(ROImask.get_fdata()), ROImask.header.get_zooms())
 
-        # reshape masks
-        ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-
         # perform registration
         if fixed == "flair":
             # reshape fixed image
@@ -254,6 +243,9 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         # from ants back to nibabel
         flair = ants.to_nibabel(flair)
         dwi = ants.to_nibabel(dwi)
+        
+        ROImask = nibabel.processing.resample_from_to(ROImask, flair, order=0)
+        mask = nibabel.processing.resample_from_to(mask, flair, order=0)
 
         # normalize scans within ROI
         n_flair = flair.get_fdata()[ROImask.get_fdata() == 1]
@@ -264,11 +256,14 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         dwi = nib.Nifti1Image(n_dwi, affine=dwi.affine)
 
         # check dimensions, mean and std
-        assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
         assert np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(flair.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
             f"Mean and std within ROI of flair image are not 0 and 1: {flair.get_fdata()[ROImask.get_fdata() == 1].mean()}, {flair.get_fdata()[ROImask.get_fdata() == 1].std()}"
         assert np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].mean(), 0) and np.allclose(dwi.get_fdata()[ROImask.get_fdata() == 1].std(), 1), \
             f"Mean and std within ROI of dwi image are not 0 and 1: {dwi.get_fdata()[ROImask.get_fdata() == 1].mean()}, {dwi.get_fdata()[ROImask.get_fdata() == 1].std()}"
+        assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
+        assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
+        assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
+        assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # check error after preprocessing
         mask_interpol = nibabel.processing.resample_from_to(mask, orig_mask, order=0)

@@ -42,9 +42,9 @@ def nnunet_preprocess_Motol(flair_images: tuple[str, ...],
         # load images and masks
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
-        mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask, flair.affine)
+        mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask)
         mask = np.logical_or(mask_flair.get_fdata(), mask_dwi.get_fdata())
-        mask = nib.Nifti1Image(mask.astype(np.int8), affine=flair.affine)
+        mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
 
         # reshape flair
         flair = nibabel.processing.conform(flair, voxel_size=(1,1,1), out_shape=(200,200,200))
@@ -66,30 +66,25 @@ def nnunet_preprocess_Motol(flair_images: tuple[str, ...],
         ROImask = nib.load(BET_mask)
 
         # reshape masks
-        ROImask = nibabel.processing.conform(ROImask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask_flair = nibabel.processing.conform(mask_flair, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
-        mask_dwi = nibabel.processing.conform(mask_dwi, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
+        ROImask = nibabel.processing.resample_from_to(ROImask, flair, order=0)
+        mask = nibabel.processing.resample_from_to(mask, flair, order=0)
         
         # apply BET mask
         flair = nib.Nifti1Image(flair.get_fdata() * ROImask.get_fdata(), affine=flair.affine)
         dwi = nib.Nifti1Image(dwi.get_fdata() * ROImask.get_fdata(), affine=dwi.affine)
         mask = nib.Nifti1Image((mask.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask.affine)
-        mask_flair = nib.Nifti1Image((mask_flair.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask_flair.affine)
-        mask_dwi = nib.Nifti1Image((mask_dwi.get_fdata() * ROImask.get_fdata()).astype(np.int8), affine=mask_dwi.affine)
 
         # check dimensions
         assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
+        assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
+        assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
+        assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # prepare folders
         if not os.path.exists(f"{output_folder}/Dataset001_Strokes/imagesTr"):
             os.makedirs(f"{output_folder}/Dataset001_Strokes/imagesTr")
         if not os.path.exists(f"{output_folder}/Dataset001_Strokes/labelsTr"):
             os.makedirs(f"{output_folder}/Dataset001_Strokes/labelsTr")
-        if not os.path.exists(f"{output_folder}/Dataset002_FlairMasks/labelsTr"):
-            os.makedirs(f"{output_folder}/Dataset002_FlairMasks/labelsTr")
-        if not os.path.exists(f"{output_folder}/Dataset003_DwiMasks/labelsTr"):
-            os.makedirs(f"{output_folder}/Dataset003_DwiMasks/labelsTr")
 
         # save images
         # modalities: imagesTr/{CASE_IDENTIFIER}_{XXXX}.{FILE_ENDING}
@@ -97,8 +92,6 @@ def nnunet_preprocess_Motol(flair_images: tuple[str, ...],
         nib.save(mask, f"{output_folder}/Dataset001_Strokes/labelsTr/{name}.nii.gz")
         nib.save(flair, f"{output_folder}/Dataset001_Strokes/imagesTr/{name}_0000.nii.gz")
         nib.save(dwi, f"{output_folder}/Dataset001_Strokes/imagesTr/{name}_0001.nii.gz")
-        nib.save(mask_flair, f"{output_folder}/Dataset002_FlairMasks/labelsTr/{name}.nii.gz")
-        nib.save(mask_dwi, f"{output_folder}/Dataset003_DwiMasks/labelsTr/{name}.nii.gz")
 
 def nnunet_preprocess_ISLES(flair_images: tuple[str, ...],
                             dwi_images: tuple[str, ...],
@@ -133,14 +126,6 @@ def nnunet_preprocess_ISLES(flair_images: tuple[str, ...],
         flair = nib.load(flair_image)
         dwi = nib.load(dwi_image)
         mask = nib.load(fixed_mask)
-        # some ISLES2022 mask datatypes are floats -> recast
-        if fixed == "flair":
-            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=flair.affine)
-        elif fixed == "dwi":
-            mask = nib.Nifti1Image(mask.get_fdata().astype(np.int8), affine=dwi.affine)
-
-        # reshape masks
-        mask = nibabel.processing.conform(mask, voxel_size=(1,1,1), out_shape=(200,200,200), order=0)
 
         # perform registration
         if fixed == "flair":
@@ -166,8 +151,14 @@ def nnunet_preprocess_ISLES(flair_images: tuple[str, ...],
         flair = ants.to_nibabel(flair)
         dwi = ants.to_nibabel(dwi)
 
+        mask = nibabel.processing.resample_from_to(mask, flair, order=0)
+        mask = nib.Nifti1Image(mask.get_fdata().round().astype(np.int8), affine=mask.affine)
+
         # check dimensions
         assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
+        assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
+        assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
+        assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # prepare folder
         if not os.path.exists(f"{output_folder}/Dataset001_Strokes/imagesTr"):
