@@ -48,9 +48,9 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         dwi = nib.load(dwi_image)
         mask_flair, mask_dwi = nrrd_to_nifti(fixed_mask)
         mask = np.logical_or(mask_flair.get_fdata(), mask_dwi.get_fdata())
-        mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
         orig_mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
-
+        mask = nib.Nifti1Image(mask.astype(np.int8), affine=mask_flair.affine)
+        
         # compute components
         components = cc3d.connected_components(mask.get_fdata(), connectivity=26)
         for component in np.unique(components)[1:]:
@@ -94,6 +94,8 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
         # load BET mask
         # assume BET masks are co-registered to FLAIR!
         ROImask = nib.load(BET_mask)
+        # DeepMedic bug -> recast from uint to int
+        ROImask = nib.Nifti1Image(ROImask.get_fdata().astype(np.int8), affine=ROImask.affine)
         
         # reshape masks
         ROImask = nibabel.processing.resample_from_to(ROImask, flair, order=0)
@@ -134,7 +136,7 @@ def deepmedic_preprocess_Motol(flair_images: tuple[str, ...],
             os.makedirs(f"{output_folder}/{dataset_name}/{name}")
 
         # save images
-        nib.save(mask, f"{output_folder}/{dataset_name}/{name}/mask.nii.gz")
+        nib.save(mask, f"{output_folder}/{dataset_name}/{name}/label.nii.gz")
         nib.save(flair, f"{output_folder}/{dataset_name}/{name}/flair.nii.gz")
         nib.save(dwi, f"{output_folder}/{dataset_name}/{name}/dwi.nii.gz")
         nib.save(ROImask, f"{output_folder}/{dataset_name}/{name}/ROImask.nii.gz")
@@ -263,7 +265,9 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
         assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
         assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
         assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
-        assert (mask.get_fdata()==1).any(), "Mask is empty"
+        if not name in ["sub-strokecase0150", "sub-strokecase0151", "sub-strokecase0170"]:
+            # skip non-stroke cases
+            assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # check error after preprocessing
         mask_interpol = nibabel.processing.resample_from_to(mask, orig_mask, order=0)
@@ -275,7 +279,7 @@ def deepmedic_preprocess_ISLES(flair_images: tuple[str, ...],
             os.makedirs(f"{output_folder}/{dataset_name}/{name}")
 
         # save images
-        nib.save(mask, f"{output_folder}/{dataset_name}/{name}/mask.nii.gz")
+        nib.save(mask, f"{output_folder}/{dataset_name}/{name}/label.nii.gz")
         nib.save(flair, f"{output_folder}/{dataset_name}/{name}/flair.nii.gz")
         nib.save(dwi, f"{output_folder}/{dataset_name}/{name}/dwi.nii.gz")
         nib.save(ROImask, f"{output_folder}/{dataset_name}/{name}/ROImask.nii.gz")

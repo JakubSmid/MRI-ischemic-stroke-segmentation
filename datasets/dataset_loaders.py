@@ -44,10 +44,11 @@ class Motol():
         self.BETmasks = []
 
         for patient_folder in os.listdir(dataset_folder):
-            if patient_folder == "2290867" or patient_folder == "898251":
-                # skip corrupted patients
-                continue
             for anat in os.listdir(f'{dataset_folder}/{patient_folder}'):
+                if anat == "Anat_20230109":
+                    # skip anat with corrupted segmentation
+                    # 2290867/Anat_20230109
+                    continue
                 self.flairs.append(f"{dataset_folder}/{patient_folder}/{anat}/rFlair.nii.gz")
                 self.dwis.append(f"{dataset_folder}/{patient_folder}/{anat}/rDWI2.nii.gz")
                 self.masks.append(f"{dataset_folder}/{patient_folder}/{anat}/Leze_FLAIR_DWI2.nrrd")

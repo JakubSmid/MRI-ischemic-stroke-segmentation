@@ -7,6 +7,6 @@
         "background": 0,
         "lesion": 1
     },
-    "numTraining": 332,
+    "numTraining": 334,
     "file_ending": ".nii.gz"
 }

@@ -158,7 +158,9 @@ def nnunet_preprocess_ISLES(flair_images: tuple[str, ...],
         assert flair.shape == dwi.shape == mask.shape, f"Shapes are not the same: {flair.shape}, {dwi.shape}, {mask.shape}"
         assert np.allclose(flair.affine, dwi.affine), f"FLAIR and DWI have different affines:\n{flair.affine}\n{dwi.affine}"
         assert np.allclose(flair.affine, mask.affine), f"FLAIR and mask have different affines:\n{flair.affine}\n{mask.affine}"
-        assert (mask.get_fdata()==1).any(), "Mask is empty"
+        if not name in ["sub-strokecase0150", "sub-strokecase0151", "sub-strokecase0170"]:
+            # skip non-stroke cases
+            assert (mask.get_fdata()==1).any(), "Mask is empty"
 
         # prepare folder
         if not os.path.exists(f"{output_folder}/Dataset001_Strokes/imagesTr"):
