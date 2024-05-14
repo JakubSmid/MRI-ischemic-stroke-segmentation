@@ -8,14 +8,11 @@ import os
 import shutil
 import sys
 
-sys.path.append(os.getcwd())
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import datasets.dataset_loaders as dataset_loaders
 
 motol = dataset_loaders.Motol()
+os.makedirs("skull_stripping/Motol_FLAIR", exist_ok=True)
 
-# create folder FLAIR if it does not exist
-if not os.path.exists('skull_stripping/Motol_FLAIR'):
-    os.mkdir('skull_stripping/Motol_FLAIR')
-
-for flair, name in zip(motol.flairs, motol.names):
-    shutil.copy(flair, f"skull_stripping/Motol_FLAIR/{name}.nii.gz")
+for subj in motol:
+    shutil.copy(subj.flair, f"skull_stripping/Motol_FLAIR/{subj.name}.nii.gz")

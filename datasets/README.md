@@ -6,6 +6,8 @@ In this folder there are three scripts:
 - `dataset_loaders.py` - Contains classes for loading the datasets. Each class has list of names and paths to DWI, FLAIR and lesion masks.
 - `utils.py` - Contains utility functions which are used mainly for preprocessing.
 
+Registration of brain FLAIR scans using ANTs to the MNI space using transformed template [[1]](#1).
+
 ## Motol
 Motol dataset is provided by Second Faculty of Medicine CUNI, Prague.
 
@@ -50,3 +52,6 @@ To extend Motol dataset I am also using ISLES-2015 dataset which can be download
 From ISLES 2022 I'm using data from Multimodal MRI infarct segmentation in acute and sub-acute stroke task which can be downloaded from [https://isles22.grand-challenge.org/](https://isles22.grand-challenge.org/).
 
 <cite>Hernandez Petzsche, Moritz R et al. “ISLES 2022: A multi-center magnetic resonance imaging stroke lesion segmentation dataset.” Scientific data vol. 9,1 762. 10 Dec. 2022, doi:10.1038/s41597-022-01875-5</cite>
+
+## References
+<a id="1">[1]</a>  Rajashekar, Deepthi et al. “High-resolution T2-FLAIR and non-contrast CT brain atlas of the elderly.” Scientific data vol. 7,1 56. 17 Feb. 2020, doi:10.1038/s41597-020-0379-9

@@ -4,9 +4,7 @@ For each patient, the BET mask is copied to the corresponding folder.
 """
 
 import os
-import sys
 import shutil
-import gzip
 
 for file in os.listdir('skull_stripping/Motol_FLAIR'):
     # skip _bet folder with output of HD-BET
