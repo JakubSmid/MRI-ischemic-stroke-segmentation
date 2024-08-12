@@ -3,7 +3,7 @@ This folder contains three folders with unmodified datasets (Motol, SISS2015_Tra
 
 In this folder there are three scripts:
 - `download_Motol.py` - Executable script which has been used to download Motol dataset from the NAS drive to the local machine.
-- `dataset_loaders.py` - Contains classes for loading the datasets. Each class has list of names and paths to DWI, FLAIR and lesion masks.
+- `dataset_loaders.py` - Contains classes for loading datasets. Each class has list of names and paths to DWI, FLAIR and lesion masks.
 - `utils.py` - Contains utility functions which are used mainly for preprocessing.
 
 Registration of brain FLAIR scans using ANTs to the MNI space using transformed template [[1]](#1).

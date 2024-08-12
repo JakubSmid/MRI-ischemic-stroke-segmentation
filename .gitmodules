@@ -1,3 +1,6 @@
 [submodule "deepmedic"]
 	path = deepmedic
 	url = https://github.com/deepmedic/deepmedic.git
+[submodule "FLAIR-and-NCCT-atlas-for-elderly"]
+	path = FLAIR-and-NCCT-atlas-for-elderly
+	url = https://github.com/deepthirajashekar/FLAIR-and-NCCT-atlas-for-elderly

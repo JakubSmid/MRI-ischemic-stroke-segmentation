@@ -2,117 +2,153 @@ import os
 import ants
 import numpy as np
 from dataclasses import dataclass
-from .utils import load_nrrd, apply_transform_to_label
+import datasets.utils
 
 @dataclass
 class Subject():
     name: str
-    flair: str | ants.ANTsImage
-    dwi: str | ants.ANTsImage
-    label: str | ants.ANTsImage
+    flair: str | ants.ants_image.ANTsImage
+    dwi: str | ants.ants_image.ANTsImage
+    label: str | ants.ants_image.ANTsImage
     labeled_modality: str = "flair"
-    BETmask: str | ants.ANTsImage = None
-    
-    def normalize(self):
-        """
-        Normalizes the flair and dwi images of the subject by subtracting the mean and dividing by the standard deviation.
-        """
-        assert self.is_loaded(), f"Subject {self.name} is not loaded"
-        data = self.flair.numpy()
-        self.flair = self.flair.new_image_like((data-data.mean()) / data.std())
+    BETmask: str | ants.ants_image.ANTsImage = None
 
-        data = self.dwi.numpy()
-        self.dwi = self.dwi.new_image_like((data-data.mean()) / data.std())
-
-    def load_data(self,
-                  transform_dwi_to_flair=True,
-                  transform_to_mni=False,
-                  load_label=True,
-                  target_shape=(200, 200, 200),
-                  target_spacing=(1, 1, 1)):
+    def load_data(self, load_label=True, transform_to_flair=True):
         """
-        Loads and processes images for the Subject, including reading images, applying transformations and resampling to target shape.
+        Loads data for the subject, including images like flair and dwi, and optionally the label.
         
         Parameters:
-            transform_dwi_to_flair (bool): Whether to transform DWI to FLAIR space.
-            transform_to_mni (bool): Whether to transform to MNI space.
-            load_label (bool): Whether to load the label.
-            target_shape (tuple | None): Target shape of the images. If None, the images are not resampled.
-            target_spacing (tuple): Target spacing of the images.
+            load_label (bool): Flag indicating whether to load the label image.
+        
+        Returns:
+            None
         """
         
         assert not self.is_loaded(), f"Subject {self.name} is already loaded"
-        
+
         # save paths
         self._subj_paths = [self.flair, self.dwi, self.label, self.BETmask]
 
         # load images
         self.flair = ants.image_read(self.flair)
-        self.dwi = ants.image_read(self.dwi)
+        self.dwi = ants.image_read(self.dwi) 
         
+        if transform_to_flair:
+            transform = ants.read_transform(self.transform_dwi_to_flair)
+            self.dwi = transform.apply_to_image(self.dwi, self.flair)
+
         if load_label:
             if ".nrrd" in self.label:
-                self.label = load_nrrd(self.label)
-                new_label = np.logical_or(self.label[0].numpy(), self.label[1].numpy()).astype(np.uint8)
-                self.label = self.label[0].new_image_like(new_label)
+                label_flair, label_dwi = datasets.utils.load_nrrd(self.label)
+
+                # resample flair label to flair
+                if label_flair.shape != self.flair.shape:
+                    label_flair = datasets.utils.resample_label_to_target(label_flair, self.flair)
+
+                # resample dwi label to flair
+                if label_dwi.shape != self.flair.shape:
+                    label_dwi = datasets.utils.resample_label_to_target(label_dwi, self.flair)
+                
+                # apply transforms to label
+                if transform_to_flair:
+                    label_dwi = datasets.utils.apply_transform_to_label(label_dwi, transform, self.flair)
+ 
+                label_union = np.logical_or(label_flair.numpy(), label_dwi.numpy()).astype(np.uint32)
+                self.label = label_flair.new_image_like(label_union)
+
             else:
-                self.label = ants.image_read(self.label)
+                self.label = ants.image_read(self.label).astype("uint32")
+                if transform_to_flair and self.labeled_modality == "dwi":
+                    self.label = datasets.utils.apply_transform_to_label(self.label, transform, self.flair)
 
         if self.BETmask:
-            self.BETmask = ants.image_read(self.BETmask).astype("float32")
+            self.BETmask = ants.image_read(self.BETmask).astype("uint32")
         else:
-            self.BETmask = self.flair.new_image_like((self.flair.numpy() != 0).astype("float32"))
+            self.BETmask = self.flair.new_image_like((self.flair.numpy() != 0).astype("uint32"))
 
-        if transform_dwi_to_flair:
-            dwi_to_flair = ants.read_transform(self.transform_dwi_to_flair)
-            self.dwi = dwi_to_flair.apply_to_image(self.dwi, self.flair)
-            if self.labeled_modality == "dwi" and load_label:
-                self.label = apply_transform_to_label(self.label, dwi_to_flair, self.flair)
+    def extract_brain(self):
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
 
-        if transform_to_mni:
-            template_mni = ants.image_read("datasets/template_flair_mni.nii.gz")
-            warp = ants.transform_from_displacement_field(ants.image_read(self.transform_flair_to_mni[0]))
-            affine = ants.read_transform(self.transform_flair_to_mni[1])
+        self.flair = ants.mask_image(self.flair, self.BETmask.astype("float32"))
+        self.dwi = ants.mask_image(self.dwi, self.BETmask.astype("float32"))
+        self.label = ants.mask_image(self.label, self.BETmask.astype("float32")).astype("uint32")
 
-            self.flair = affine.apply_to_image(self.flair, template_mni)
-            self.flair = warp.apply_to_image(self.flair, template_mni)
+    def normalize(self):
+        """
+        Normalizes the flair and dwi images of the subject by subtracting the mean and dividing by the standard deviation.
+        """
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
 
-            self.dwi = affine.apply_to_image(self.dwi, template_mni)
-            self.dwi = warp.apply_to_image(self.dwi, template_mni)
+        data = self.flair.numpy()
+        self.flair = self.flair.new_image_like((data-np.mean(data)) / np.std(data))
 
-            self.BETmask = apply_transform_to_label(self.BETmask, affine, template_mni)
-            self.BETmask = apply_transform_to_label(self.BETmask, warp, template_mni).astype("float32")
+        data = self.dwi.numpy()
+        self.dwi = self.dwi.new_image_like((data-np.mean(data)) / np.std(data))
+    
+    def resample_to_target(self, target_shape=(200, 200, 200), target_spacing=(1.0, 1.0, 1.0)):
+        """
+        Resamples images to a target shape and spacing.
 
-            self.label = apply_transform_to_label(self.label, affine, template_mni)
-            self.label = apply_transform_to_label(self.label, warp, template_mni)
+        Parameters:
+            target_shape (tuple | None): Target shape of the images.
+            target_spacing (tuple): Target spacing of the images.
 
-        # brain extraction
-        self.flair = ants.mask_image(self.flair, self.BETmask)
-        self.dwi = ants.mask_image(self.dwi, self.BETmask)
-        self.label = ants.mask_image(self.label, self.BETmask)
+        Returns:
+            None
+        """
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
 
-        if target_shape is not None:
-            # crop skull and air from image
-            self.flair = ants.crop_image(self.flair, self.BETmask)
-            self.dwi = ants.crop_image(self.dwi, self.BETmask)
-            self.label = ants.crop_image(self.label, self.BETmask)
+        # crop skull and air from image
+        self.flair = ants.crop_image(self.flair, self.BETmask)
+        self.dwi = ants.crop_image(self.dwi, self.BETmask)
+        self.label = ants.crop_image(self.label, self.BETmask)
 
-            # resample flair to desired shape
-            self.flair = ants.resample_image(self.flair, target_spacing, use_voxels=False)
-            self.flair = ants.pad_image(self.flair, target_shape)
+        # resample flair to desired shape
+        self.flair = ants.resample_image(self.flair, target_spacing, use_voxels=False)
+        self.flair = ants.pad_image(self.flair, target_shape)
 
-            # resample other images to flair
-            self.dwi = ants.resample_image_to_target(self.dwi, self.flair)
-            self.label = ants.resample_image_to_target(self.label, self.flair, interpolation="genericLabel").astype("uint32")
-            self.BETmask = ants.resample_image_to_target(self.BETmask, self.flair, interpolation="genericLabel").astype("uint32")
+        # resample other images to flair
+        self.dwi = ants.resample_image_to_target(self.dwi, self.flair)
+        self.label = datasets.utils.resample_label_to_target(self.label, self.flair)
+        self.BETmask = datasets.utils.resample_label_to_target(self.BETmask, self.flair)
 
-            # check shapes
-            assert self.flair.shape == target_shape, f"Shape mismatch: FLAIR: {self.flair.shape}, target: {target_shape}"
-            assert self.flair.spacing == target_spacing, f"Spacing mismatch: FLAIR: {self.flair.spacing}, target: {target_spacing}"
+        # check shapes
+        assert self.flair.shape == target_shape, f"Shape mismatch: FLAIR: {self.flair.shape}, target: {target_shape}"
+        assert self.flair.spacing == target_spacing, f"Spacing mismatch: FLAIR: {self.flair.spacing}, target: {target_spacing}"
+
+    def apply_transform_to_mni(self, template_mni="datasets/template_flair_mni.nii.gz"):
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
+
+        template_mni = ants.image_read(template_mni)
+        warp = ants.transform_from_displacement_field(ants.image_read(self.transform_flair_to_mni[0]))
+        affine = ants.read_transform(self.transform_flair_to_mni[1])
+
+        self.flair = affine.apply_to_image(self.flair, template_mni)
+        self.flair = warp.apply_to_image(self.flair, template_mni)
+
+        self.dwi = affine.apply_to_image(self.dwi, template_mni)
+        self.dwi = warp.apply_to_image(self.dwi, template_mni)
+
+        self.BETmask = datasets.utils.apply_transform_to_label(self.BETmask, affine, template_mni)
+        self.BETmask = datasets.utils.apply_transform_to_label(self.BETmask, warp, template_mni)
+
+        self.label = datasets.utils.apply_transform_to_label(self.label, affine, template_mni)
+        self.label = datasets.utils.apply_transform_to_label(self.label, warp, template_mni)
+
+    def space_integrity_check(self):
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
+
         assert self.flair.shape == self.dwi.shape == self.label.shape, f"Shape mismatch: FLAIR: {self.flair.shape}, DWI: {self.dwi.shape}, label: {self.label.shape}"
         assert self.flair.spacing == self.dwi.spacing == self.label.spacing, f"Spacing mismatch: FLAIR: {self.flair.spacing}, DWI: {self.dwi.spacing}, label: {self.label.spacing}"
         assert np.allclose(self.flair.direction, self.dwi.direction) and np.allclose(self.flair.direction, self.label.direction), f"Direction mismatch: FLAIR: {self.flair.direction}, DWI: {self.dwi.direction}, label: {self.label.direction}"
-        assert (self.label.numpy() != 0).any(), "Label is empty"
+
+    def save(self, output_folder):
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
+
+        ants.image_write(self.flair, os.path.join(output_folder, f"{self.name}_flair.nii.gz"))
+        ants.image_write(self.dwi, os.path.join(output_folder, f"{self.name}_dwi.nii.gz"))
+        ants.image_write(self.label, os.path.join(output_folder, f"{self.name}_label.nii.gz"))
+        ants.image_write(self.BETmask, os.path.join(output_folder, f"{self.name}_BETmask.nii.gz"))
 
     def free_data(self):
         """
@@ -126,7 +162,7 @@ class Subject():
         self.BETmask = self._subj_paths[3]
 
     def is_loaded(self):
-        return isinstance(self.flair, ants.ANTsImage)
+        return isinstance(self.flair, ants.ants_image.ANTsImage)
 
     def __post_init__(self):
         """
@@ -158,7 +194,7 @@ def ISLES2015(dataset_folder = "datasets/SISS2015_Training/") -> list[Subject]:
 
         subjects.append(
             Subject(
-                name = patient_folder,
+                name = str(patient_folder),
                 flair = f"{dataset_folder}/{patient_folder}/{flair}/{flair}.nii.gz",
                 dwi = f"{dataset_folder}/{patient_folder}/{dwi}/{dwi}.nii.gz",
                 label = f"{dataset_folder}/{patient_folder}/{label}/{label}.nii.gz"

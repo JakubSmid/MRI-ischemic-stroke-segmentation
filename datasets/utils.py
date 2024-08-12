@@ -66,7 +66,7 @@ def trim_zero_padding(MRI_image: nib.Nifti1Image) -> nib.Nifti1Image:
         MRI_image = MRI_image.slicer[min(xs):max(xs)+1,min(ys):max(ys)+1,min(zs):max(zs)+1]
     return MRI_image
 
-def load_nrrd(nrrd_path: str) -> list[ants.ANTsImage]:
+def load_nrrd(nrrd_path: str) -> list[ants.ants_image.ANTsImage]:
     """
     Load an nrrd file and extract FLAIR and DWI segmentations. 
     Check that there is exactly one FLAIR and one DWI segmentation in the header.
@@ -76,28 +76,23 @@ def load_nrrd(nrrd_path: str) -> list[ants.ANTsImage]:
     nrrd_path (str): The file path to the nrrd file.
 
     Returns:
-    list[ants.ANTsImage]: Two ANTs images representing the FLAIR and DWI segmentations.
+    list[ants.ants_image.ANTsImage]: Two ANTs images representing the FLAIR and DWI segmentations.
     """
     # load nrrd
     data, header = nrrd.read(nrrd_path)
     assert header["space"] == "left-posterior-superior", f"Space should be 'left-posterior-superior', but it is {header['space']}"
     
-    # check multiple FLAIR and DWI segmentations
+    # find the FLAIR and DWI segmentations
     dwi = 0
     flair = 0
-    for v in header.values():
-        if "DWI" in str(v).upper():
-            dwi += 1
-        if "FLAIR" in str(v).upper():
-            flair += 1
-    assert dwi == 1 and flair == 1, f"{nrrd_path}: There should be exactly one FLAIR and one DWI segmentation, but there are {flair} FLAIR segmentations and {dwi} DWI segmentations"
-
-    # find the FLAIR and DWI segmentations
     for key, value in header.items():
         if "FLAIR" in str(value).upper():
             flair_segment = key.split("_")[0]
+            flair += 1
         if "DWI" in str(value).upper():
             dwi_segment = key.split("_")[0]
+            dwi += 1
+    assert flair == 1 and dwi == 1, f"{nrrd_path}: There should be exactly one FLAIR and one DWI segmentation, but there are {flair} FLAIR segmentations and {dwi} DWI segmentations"
     
     flair_layer = header[flair_segment + "_Layer"]
     flair_value = header[flair_segment + "_LabelValue"]
@@ -106,8 +101,8 @@ def load_nrrd(nrrd_path: str) -> list[ants.ANTsImage]:
     dwi_value = header[dwi_segment + "_LabelValue"]
 
     # extract masks from nrrd
-    flair_mask = np.where(data == int(flair_value), 1, 0)[int(flair_layer), :, :, :].astype(np.uint8)
-    dwi_mask = np.where(data == int(dwi_value), 1, 0)[int(dwi_layer), :, :, :].astype(np.uint8)
+    flair_mask = np.where(data == int(flair_value), 1, 0)[int(flair_layer), :, :, :].astype(np.uint32)
+    dwi_mask = np.where(data == int(dwi_value), 1, 0)[int(dwi_layer), :, :, :].astype(np.uint32)
 
     affine = np.zeros((4,4))
     affine[:3, :3] = header["space directions"][1:].T
@@ -125,17 +120,17 @@ def load_nrrd(nrrd_path: str) -> list[ants.ANTsImage]:
 
     return ants_flair, ants_dwi
 
-def invert_SyN_registration(image: ants.ANTsImage, warp_file: str, affine_file: str) -> ants.ANTsImage:
+def invert_SyN_registration(image: ants.ants_image.ANTsImage, warp_file: str, affine_file: str) -> ants.ants_image.ANTsImage:
     """
     Inverts the SyN registration for the given image using the provided warp and affine files.
 
     Parameters:
-        image (ants.ANTsImage): The image to be registered.
+        image (ants.ants_image.ANTsImage): The image to be registered.
         warp_file (str): The warp file for the registration.
         affine_file (str): The affine file for the registration.
 
     Returns:
-        ants.ANTsImage: The inverted image after applying the SyN registration.
+        ants.ants_image.ANTsImage: The inverted image after applying the SyN registration.
     """
     warp = ants.image_read(warp_file).apply(lambda x: -x)
     warptx = ants.transform_from_displacement_field(warp)
@@ -145,17 +140,33 @@ def invert_SyN_registration(image: ants.ANTsImage, warp_file: str, affine_file: 
     inverted = affinetx.apply_to_image(inverted)
     return inverted
 
-def apply_transform_to_label(label: ants.ANTsImage, transform: ants.ANTsTransform, reference: ants.ANTsImage = None) -> ants.ANTsImage:
+def apply_transform_to_label(label: ants.ants_image.ANTsImage, transform: ants.ANTsTransform, reference: ants.ants_image.ANTsImage = None) -> ants.ants_image.ANTsImage:
     """
     Apply a transformation to the input label image.
 
     Parameters:
-        label (ants.ANTsImage): The input label image.
+        label (ants.ants_image.ANTsImage): The input label image.
         transform (ants.ANTsTransform): The transformation to apply.
-        reference (ants.ANTsImage, optional): The reference space for transformation. Defaults to None.
+        reference (ants.ants_image.ANTsImage, optional): The reference space for transformation. Defaults to None.
 
     Returns:
-        ants.ANTsImage: The transformed label image as uint32 in reference space.
+        ants.ants_image.ANTsImage: The transformed label image as uint32 in reference space.
     """
-    transformed = transform.apply_to_image(label, reference, interpolation="linear")
+    # interpolation="genericLabel" or "genericlabel" throws: ITK ERROR: ResampleImageFilter(0x4572160): Interpolator not set
+    transformed = transform.apply_to_image(label.astype("float32"), reference, interpolation="linear")
     return transformed.new_image_like(transformed.numpy().round().astype(np.uint32))
+
+def resample_label_to_target(label: ants.ants_image.ANTsImage, target_image: ants.ants_image.ANTsImage) -> ants.ants_image.ANTsImage:
+    """
+    Resamples the input label image to the target image.
+
+    Parameters:
+        label (ants.ants_image.ANTsImage): The input label image.
+        target_image (ants.ants_image.ANTsImage): The target image.
+
+    Returns:
+        ants.ants_image.ANTsImage: The resampled label image.
+    """
+    # interpolation="genericlabel" gives output with floating point which results in smaller label
+    resampled = ants.resample_image_to_target(label.astype("float32"), target_image, interpolation="linear")
+    return resampled.new_image_like(resampled.numpy().round().astype(np.uint32))
