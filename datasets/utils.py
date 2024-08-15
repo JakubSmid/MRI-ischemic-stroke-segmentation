@@ -1,5 +1,4 @@
 import numpy as np
-import nibabel as nib
 import ants
 import nrrd
 
@@ -16,20 +15,17 @@ def subtract_masks(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     return np.logical_and(x, np.logical_not(y)) * 1
 
-def dice_coefficient(y_true: nib.Nifti1Image|np.ndarray, y_pred: nib.Nifti1Image|np.ndarray) -> float:
+def dice_coefficient(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Calculate the Dice coefficient between two Nifti1Image or numpy masks.
     
     Args:
-    - y_true: a numpy array or a Nifti1Image object representing the ground truth segmentation
-    - y_pred: a numpy array or a Nifti1Image object representing the predicted segmentation
+    - y_true: a numpy array representing the ground truth segmentation
+    - y_pred: a numpy array representing the predicted segmentation
     
     Returns:
     - float: the Dice coefficient
     """
-    if type(y_true) == nib.Nifti1Image and type(y_pred) == nib.Nifti1Image:
-        y_true = y_true.get_fdata()
-        y_pred = y_pred.get_fdata()
     intersection = np.count_nonzero(y_true * y_pred)
     if y_pred.sum() == 0 and y_true.sum() == 0:
         return 1
@@ -49,22 +45,6 @@ def voxel_count_to_volume_ml(voxel_count: int, voxel_zooms: tuple[float, float, 
     - float: The volume in milliliters.
     """
     return voxel_count * np.prod(voxel_zooms) / 1000
-
-def trim_zero_padding(MRI_image: nib.Nifti1Image) -> nib.Nifti1Image:
-    """
-    Trim zero padding from the input Nifti1Image and return the trimmed image.
-    
-    Args:
-    - MRI_image: a Nifti1Image object representing the MRI image
-    
-    Returns:
-    - nib.Nifti1Image: the trimmed Nifti1Image object
-    """
-    xs, ys, zs = np.where(MRI_image.get_fdata() != 0)
-    # if no nonzero voxels found return original image
-    if len(xs) != 0:
-        MRI_image = MRI_image.slicer[min(xs):max(xs)+1,min(ys):max(ys)+1,min(zs):max(zs)+1]
-    return MRI_image
 
 def load_nrrd(nrrd_path: str) -> list[ants.ants_image.ANTsImage]:
     """
