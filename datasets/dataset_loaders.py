@@ -142,6 +142,10 @@ class Subject():
         assert self.flair.spacing == self.dwi.spacing == self.label.spacing, f"Spacing mismatch: FLAIR: {self.flair.spacing}, DWI: {self.dwi.spacing}, label: {self.label.spacing}"
         assert np.allclose(self.flair.direction, self.dwi.direction) and np.allclose(self.flair.direction, self.label.direction), f"Direction mismatch: FLAIR: {self.flair.direction}, DWI: {self.dwi.direction}, label: {self.label.direction}"
 
+    def empty_label_check(self):
+        assert self.is_loaded(), f"Subject {self.name} is not loaded"
+        assert (self.label.numpy() != 0).any() or ("sub-strokecase0150" in self.name) or ("sub-strokecase0151" in self.name) or ("sub-strokecase0170" in self.name), f"Subject {self.name} label is empty"
+
     def save(self, output_folder):
         assert self.is_loaded(), f"Subject {self.name} is not loaded"
 

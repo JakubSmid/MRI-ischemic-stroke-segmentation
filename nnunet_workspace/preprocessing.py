@@ -1,19 +1,12 @@
-import nibabel as nib
-import nibabel.processing
 import ants
 import os
-import numpy as np
 import multiprocessing
-
-import sys
-import os
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 from datasets.utils import *
 import datasets.dataset_loaders
 
-def nnunet_preprocessing(dataset: list[datasets.dataset_loaders.Subject],
-                         output_folder: str = "nnunet_workspace/nnUNet_raw/"):
+def preprocessing(dataset: list[datasets.dataset_loaders.Subject],
+                  output_folder: str = "nnunet_workspace/nnUNet_raw/"):
     """
     Preprocesses the dataset by creating necessary folders, loading data, and writing images using ANTs.
 
@@ -33,6 +26,10 @@ def nnunet_preprocessing(dataset: list[datasets.dataset_loaders.Subject],
         print(f"Processing {subj.name} ({i+1}/{N})...")
 
         subj.load_data()
+        subj.extract_brain()
+        subj.resample_to_target()
+        subj.space_integrity_check()
+        subj.empty_label_check()
 
         ants.image_write(subj.flair, f"{output_folder}/Dataset001_Strokes/imagesTr/{subj.name}_0000.nii.gz")
         ants.image_write(subj.dwi, f"{output_folder}/Dataset001_Strokes/imagesTr/{subj.name}_0001.nii.gz")
@@ -47,19 +44,15 @@ if __name__ == "__main__":
     isles2022 = datasets.dataset_loaders.ISLES2022()
 
     # run preprocessing for each dataset in parallel
-    motol_p = multiprocessing.Process(target=nnunet_preprocessing,
+    motol_p = multiprocessing.Process(target=preprocessing,
                                       args=[motol])
 
-    isles15_p = multiprocessing.Process(target=nnunet_preprocessing,
+    isles15_p = multiprocessing.Process(target=preprocessing,
                                         args=[isles2015])
 
-    isles22_p = multiprocessing.Process(target=nnunet_preprocessing,
+    isles22_p = multiprocessing.Process(target=preprocessing,
                                         args=[isles2022])
     
     motol_p.start()
     isles15_p.start()
     isles22_p.start()
-
-    motol_p.join()
-    isles15_p.join()
-    isles22_p.join()
