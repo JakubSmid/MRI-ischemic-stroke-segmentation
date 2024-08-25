@@ -1,95 +1,97 @@
 import pandas as pd
 import numpy as np
-import nibabel as nib
-import nibabel.processing
+import ants
+import argparse
 
-from torchmetrics.classification import BinaryStatScores, BinaryF1Score, MulticlassStatScores, MulticlassF1Score
+from torchmetrics.classification import MulticlassStatScores, MulticlassF1Score
 import torch
 
-import argparse
-import sys
-import os
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+import datasets.utils as utils
+import datasets.dataset_loaders as dataset_loaders
 
-from datasets.utils import voxel_count_to_volume_ml, subtract_masks, nrrd_to_nifti
-import datasets.dataset_loaders
+def load_label(subject: dataset_loaders.Subject):
+    transform = ants.read_transform(subject.transform_dwi_to_flair)
+    BETmask = ants.image_read(subject.BETmask).astype("uint32")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("input_folder", type=str, help="Folder with predictions, each segmentation should have format {case}_Anat_{date}.nii.gz")
-parser.add_argument("output_file", type=str, help="Output file name (.ods)")
-args = parser.parse_args()
+    label_flair, label_dwi = utils.load_nrrd(subject.label)
 
-stats = MulticlassStatScores(num_classes=2, average="none", ignore_index=2)
-dice = MulticlassF1Score(num_classes=2, average="none", ignore_index=2)
+    # resample flair label to BETmask
+    if label_flair.shape != BETmask.shape:
+        label_flair = utils.resample_label_to_target(label_flair, BETmask.astype("float32"))
 
-gt_dataset = datasets.dataset_loaders.Motol()
-df = pd.DataFrame()
-N = len(gt_dataset.names)
-for i, (name, mask_file, bet_file) in enumerate(zip(gt_dataset.names, gt_dataset.masks, gt_dataset.BETmasks)):
-    print(f"Processing {name} ({i+1}/{N})...")
-    case = {}
-
-    BETmask = nib.load(bet_file)
-    mask_flair, mask_dwi = nrrd_to_nifti(mask_file)
-    if mask_flair.shape != BETmask.shape:
-        mask_flair = nibabel.processing.resample_from_to(mask_flair, BETmask, order=0)
-        mask_dwi = nibabel.processing.resample_from_to(mask_dwi, BETmask, order=0)
-
-    gt_label = np.logical_or(mask_flair.get_fdata(), mask_dwi.get_fdata())
-    gt_label = nib.Nifti1Image(gt_label.astype(np.int8), affine=mask_flair.affine)
-    gt_zooms = gt_label.header.get_zooms()
-
-    pred_label = nib.load(f"{args.input_folder}/{name}.nii.gz")
-    pred_label = nibabel.processing.resample_from_to(pred_label, gt_label, order=0)
-
-    gt_label = gt_label.get_fdata().astype(np.uint8)
-    gt_label[BETmask.get_fdata() == 0] = 2
-    gt_label = torch.from_numpy(gt_label)
-
-    gt_flair = mask_flair.get_fdata().astype(np.uint8)
-    gt_flair[BETmask.get_fdata() == 0] = 2
-    gt_flair = torch.from_numpy(gt_flair)
-
-    gt_dwi = mask_dwi.get_fdata().astype(np.uint8)
-    gt_dwi[BETmask.get_fdata() == 0] = 2
-    gt_dwi = torch.from_numpy(gt_dwi)
-
-    pred_label = pred_label.get_fdata().astype(np.uint8)
-    pred_label[BETmask.get_fdata() == 0] = 2
-    pred_label = torch.from_numpy(pred_label)
-
-    tp, fp, tn, fn, support = voxel_count_to_volume_ml(stats(pred_label, gt_label).numpy()[1], gt_zooms)
-    dc = dice(pred_label, gt_label).numpy()[1]
-    case["tp"] = tp
-    case["fp"] = fp
-    case["tn"] = tn
-    case["fn"] = fn
-    case["dc"] = dc
+    # resample dwi label to flair
+    if label_dwi.shape != BETmask.shape:
+        label_dwi = utils.resample_label_to_target(label_dwi, BETmask.astype("float32"))
     
-    n_pred = (pred_label==1).sum().numpy()
-    n_gt = (gt_label==1).sum().numpy()
-    pred_volume = voxel_count_to_volume_ml(n_pred, gt_zooms)
-    gt_volume = voxel_count_to_volume_ml(n_gt, gt_zooms)
-    case["pred_volume"] = pred_volume
-    case["gt_volume"] = gt_volume
+    label_dwi = utils.apply_transform_to_label(label_dwi, transform, BETmask.astype("float32"))
 
-    dc_flair = dice(pred_label, gt_flair).numpy()[1]
-    dc_dwi = dice(pred_label, gt_dwi).numpy()[1]
-    case["dc_flair"] = dc_flair
-    case["dc_dwi"] = dc_dwi
+    label_union = np.logical_or(label_flair.numpy(), label_dwi.numpy()).astype(np.uint32)
+    label = label_flair.new_image_like(label_union)
+    return label, label_dwi, label_flair, BETmask
 
-    # FLAIR\(FLAIR + DWI) vs Y\(Y + DWI)
-    gt_flair_only = subtract_masks(gt_flair, gt_dwi)
-    pred_flair_only = subtract_masks(pred_label, gt_dwi)
-    dc_flair = dice(pred_flair_only, gt_flair_only).numpy()[1]
-    case["dc_flair_only"] = dc_flair
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_folder", type=str, help="Folder with predictions, each segmentation should have format {case}_Anat_{date}.nii.gz")
+    parser.add_argument("output_file", type=str, help="Output file name (csv)")
+    args = parser.parse_args()
 
-    # DWI\(DWI + FLAIR) vs Y\(Y + FLAIR)
-    gt_dwi_only = subtract_masks(gt_dwi, gt_flair)
-    pred_dwi_only = subtract_masks(pred_label, gt_flair)
-    dc_dwi = dice(pred_dwi_only, gt_dwi_only).numpy()[1]
-    case["dc_dwi_only"] = dc_dwi
+    # ignore index 2 (outside BET mask) - it is important for corect Stat scores (true positives in ml, etc.)
+    stats = MulticlassStatScores(num_classes=2, average="none", ignore_index=2)
+    dice = MulticlassF1Score(num_classes=2, average="none", ignore_index=2)
 
-    df = pd.concat([df, pd.DataFrame(case, index=[name])])
+    gt_dataset = dataset_loaders.Motol()
+    df = pd.DataFrame()
+    N = len(gt_dataset)
+    for i, subj in enumerate(gt_dataset):
+        print(f"Processing {subj.name} ({i+1}/{N})...")
+        case = {}
 
-df.to_excel(args.output_file, engine="odf")
+        # load ground truth labels
+        label, gt_dwi, gt_flair, BETmask = load_label(subj)
+
+        # load prediction
+        pred_label = ants.image_read(f"{args.input_folder}/{subj.name}.nii.gz")
+        pred_label = utils.resample_label_to_target(pred_label, label.astype("float32"))
+        assert label.shape == pred_label.shape, f"Shape mismatch: {label.shape} != {pred_label.shape}"
+        assert label.spacing == pred_label.spacing, f"Spacing mismatch: {label.spacing} != {pred_label.spacing}"
+
+        # transfrorm to tensor
+        gt_label = label.numpy().astype(np.uint8)
+        gt_label[BETmask.numpy() == 0] = 2
+        gt_label = torch.from_numpy(gt_label)
+
+        gt_flair = gt_flair.numpy().astype(np.uint8)
+        gt_flair[BETmask.numpy() == 0] = 2
+        gt_flair = torch.from_numpy(gt_flair)
+
+        gt_dwi = gt_dwi.numpy().astype(np.uint8)
+        gt_dwi[BETmask.numpy() == 0] = 2
+        gt_dwi = torch.from_numpy(gt_dwi)
+
+        pred_label = pred_label.numpy().astype(np.uint8)
+        pred_label[BETmask.numpy() == 0] = 2
+        pred_label = torch.from_numpy(pred_label)
+
+        tp, fp, tn, fn, support = utils.voxel_count_to_volume_ml(stats(pred_label, gt_label).numpy()[1], label.spacing)
+        dc = dice(pred_label, gt_label).numpy()[1]
+        case["tp"] = tp
+        case["fp"] = fp
+        case["tn"] = tn
+        case["fn"] = fn
+        case["dc"] = dc
+        
+        n_pred = (pred_label==1).sum().numpy()
+        n_gt = (gt_label==1).sum().numpy()
+        pred_volume = utils.voxel_count_to_volume_ml(n_pred, label.spacing)
+        gt_volume = utils.voxel_count_to_volume_ml(n_gt, label.spacing)
+        case["pred_volume"] = pred_volume
+        case["gt_volume"] = gt_volume
+
+        dc_flair = dice(pred_label, gt_flair).numpy()[1]
+        dc_dwi = dice(pred_label, gt_dwi).numpy()[1]
+        case["dc_flair"] = dc_flair
+        case["dc_dwi"] = dc_dwi
+
+        df = pd.concat([df, pd.DataFrame(case, index=[subj.name])])
+
+    df.to_csv(args.output_file)
