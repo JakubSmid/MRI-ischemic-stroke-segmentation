@@ -6,7 +6,7 @@ def subtract_masks(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Generate a new array by performing a logical AND operation between `x` and the negation of `y`.
     
-    Args:
+    Parameters:
         x (np.ndarray): The first input array.
         y (np.ndarray): The second input array.
         
@@ -19,12 +19,12 @@ def dice_coefficient(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Calculate the Dice coefficient between two Nifti1Image or numpy masks.
     
-    Args:
-    - y_true: a numpy array representing the ground truth segmentation
-    - y_pred: a numpy array representing the predicted segmentation
+    Parameters:
+        y_true (np.ndarray): a numpy array representing the ground truth segmentation
+        y_pred (np.ndarray): a numpy array representing the predicted segmentation
     
     Returns:
-    - float: the Dice coefficient
+        float: the Dice coefficient
     """
     intersection = np.count_nonzero(y_true * y_pred)
     if y_pred.sum() == 0 and y_true.sum() == 0:
@@ -37,26 +37,26 @@ def voxel_count_to_volume_ml(voxel_count: int, voxel_zooms: tuple[float, float, 
     """
     Calculate the volume in milliliters based on the voxel count and voxel zooms.
 
-    Args:
-    - voxel_count (int): The number of voxels.
-    - voxel_zooms (tuple[float, float, float]): The size of each voxel in millimeters in x, y, and z dimensions.
+    Parameters:
+        voxel_count (int): The number of voxels.
+        voxel_zooms (tuple[float, float, float]): The size of each voxel in millimeters in x, y, and z dimensions.
 
     Returns:
-    - float: The volume in milliliters.
+        float: The volume in milliliters.
     """
     return voxel_count * np.prod(voxel_zooms) / 1000
 
 def load_nrrd(nrrd_path: str) -> list[ants.ants_image.ANTsImage]:
     """
-    Load an nrrd file and extract FLAIR and DWI segmentations. 
+    Load an nrrd file from Motol dataset and extract FLAIR and DWI segmentations. 
     Check that there is exactly one FLAIR and one DWI segmentation in the header.
     Create ANTs images from the extracted masks. 
 
     Parameters:
-    nrrd_path (str): The file path to the nrrd file.
+        nrrd_path (str): The file path to the nrrd file.
 
     Returns:
-    list[ants.ants_image.ANTsImage]: Two ANTs images representing the FLAIR and DWI segmentations.
+        list (ants.ants_image.ANTsImage): Two ANTs images representing the FLAIR and DWI segmentations.
     """
     # load nrrd
     data, header = nrrd.read(nrrd_path)
@@ -105,12 +105,12 @@ def invert_SyN_registration(image: ants.ants_image.ANTsImage, warp_file: str, af
     Inverts the SyN registration for the given image using the provided warp and affine files.
 
     Parameters:
-        image (ants.ants_image.ANTsImage): The image to be registered.
-        warp_file (str): The warp file for the registration.
-        affine_file (str): The affine file for the registration.
+        image (ants.ants_image.ANTsImage): Image to invert the registration for.
+        warp_file (str): The transformation warp file.
+        affine_file (str): The affine transformation file.
 
     Returns:
-        ants.ants_image.ANTsImage: The inverted image after applying the SyN registration.
+        ants.ants_image.ANTsImage: Applied inversion transformation of SyN to the image.
     """
     warp = ants.image_read(warp_file).apply(lambda x: -x)
     warptx = ants.transform_from_displacement_field(warp)

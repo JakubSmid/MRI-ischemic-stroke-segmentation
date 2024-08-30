@@ -9,6 +9,16 @@ def generate_stat_lobes(dataset: list[dataset_loaders.Subject],
                         template: ants.ants_image.ANTsImage,
                         atlas: ants.ants_image.ANTsImage, 
                         results_df: pd.DataFrame) -> None:
+    """
+    Compute lesion volume for each lobe for each subject in the dataset.
+
+    Parameters:
+        dataset (list[dataset_loaders.Subject]): List of subjects with MRI data.
+        dataset_name (str): Name of the dataset.
+        template (ants.ants_image.ANTsImage): Template image for registration to MNI space.
+        atlas (ants.ants_image.ANTsImage): Atlas image with lobe labels.
+        results_df (pandas.DataFrame): DataFrame where the results will be stored.
+    """
     # resample atlas to the template shape
     atlas = ants.resample_image_to_target(atlas, template, interpolation="genericLabel")
     atlas_np = atlas.numpy().astype(int)

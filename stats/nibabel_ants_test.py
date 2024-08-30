@@ -5,7 +5,55 @@ import ants
 import time
 import datasets.dataset_loaders as dataset_loaders
 
-def timings(subj):
+def time_nifti_to_numpy(N_TRIALS):
+    """
+    Function from ANTsPy/tests/timings_io.py
+
+    On a Macbook Pro
+    ---------------
+    1 Trial:
+    NIBABEL TIME: 2.902 seconds
+    ITK TIME: 4.375 seconds
+    ANTS TIME: 1.713 seconds
+
+    20 Trials:
+    NIBABEL TIME: 56.121 seconds
+    ITK TIME: 28.780 seconds
+    ANTS TIME: 33.601 seconds
+
+
+    Times how fast a framework can read a nifti file and convert it to numpy
+    """
+    img_paths = [ants.get_ants_data('mni')]*10
+    
+    def test_nibabel():
+        for img_path in img_paths:
+            array = np.asanyarray(nib.load(img_path).dataobj)
+
+    def test_ants():
+        for img_path in img_paths:
+            array = ants.image_read(img_path, pixeltype='float').numpy()
+
+    nib_start = time.time()
+    for i in range(N_TRIALS):
+        test_nibabel()
+    nib_end = time.time()
+    print('NIBABEL TIME: %.3f seconds' % (nib_end-nib_start))
+
+    ants_start = time.time()
+    for i in range(N_TRIALS):
+        test_ants()
+    ants_end = time.time()
+    print('ANTS TIME: %.3f seconds' % (ants_end-ants_start))
+
+def timings(subj: dataset_loaders.Subject):
+    """
+    Times NiBabel and ANTs for loading, resampling and masking
+    a subject from the Motol dataset.
+
+    Parameters:
+        subj (dataset_loaders.Subject): A subject from the Motol dataset.
+    """
     # load data
     nib_load_time = time.time()
     flair = nib.load(subj.flair)
@@ -66,18 +114,39 @@ def timings(subj):
     print(f"ANTs mask time: {ants_mask_time:.3f} s")
 
 def nib_load_time(subj, rep=10):
+    """
+    Measure the time it takes to load an image using nibabel.
+
+    Parameters:
+        subj (dataset_loaders.Subject): A subject from the Motol dataset.
+        rep (int, optional): Number of repetitions. Defaults to 10.
+    """
     start = time.time()
     for _ in range(rep):
         nib.load(subj.flair)
     print(f"Nibabel load time {rep} trials: {time.time() - start:.3f} s")
 
 def ants_load_time(subj, rep=10):
+    """
+    Measure the time it takes to load an image using ANTs.
+
+    Parameters:
+        subj (dataset_loaders.Subject): A subject from the Motol dataset.
+        rep (int, optional): Number of repetitions. Defaults to 10.
+    """
     start = time.time()
     for _ in range(rep):
         ants.image_read(subj.flair)
     print(f"ANTs load time {rep} trials: {time.time() - start:.3f} s")
 
 def nib_2_ants(subj, rep=10):
+    """
+    Measure the time it takes to load and convert a NiBabel image to an ANTs image.
+
+    Parameters:
+        subj (dataset_loaders.Subject): A subject from the Motol dataset.
+        rep (int, optional): Number of repetitions. Defaults to 10.
+    """
     start = time.time()
     for _ in range(rep):
         img = nib.load(subj.flair)
@@ -90,3 +159,6 @@ if __name__ == "__main__":
     nib_load_time(subj)
     ants_load_time(subj)
     nib_2_ants(subj)
+    
+    print(f"\nScript from ANTs")
+    time_nifti_to_numpy(20)

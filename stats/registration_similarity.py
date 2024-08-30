@@ -4,10 +4,30 @@ import datasets.dataset_loaders as dataset_loaders
 import multiprocessing
 
 def compute_similarity(image1, image2, queue):
+    """
+    Compute similarity between two ANTs images and put the result in a multiprocessing queue.
+
+    Parameters
+    ----------
+    image1 : ants.ANTsImage
+        First image
+    image2 : ants.ANTsImage
+        Second image
+    queue : multiprocessing.Queue
+        Queue to put the result in
+    """
     similarity = ants.image_similarity(image1, image2)
     queue.put(similarity)
 
 def registration_measure(dataset: list[dataset_loaders.Subject], dataset_name: str, results_df: pandas.DataFrame):
+        """
+        Compute similarity metrics between DWI and FLAIR (and original DWI) after registration.
+        
+        Parameters:
+            dataset (list[dataset_loaders.Subject]): List of subjects with MRI data.
+            dataset_name (str): Name of the dataset.
+            results_df (pandas.DataFrame): DataFrame where the results will be stored.
+        """
         queue = multiprocessing.Queue()
         for i, subj in enumerate(dataset):
             print(f"{dataset_name} {i+1}/{len(dataset)}: {subj.name}")
@@ -23,6 +43,8 @@ def registration_measure(dataset: list[dataset_loaders.Subject], dataset_name: s
             mutual_information = ants.metrics.image_mutual_information(dwi_tf, dwi_orig)
 
             # compute similarity in another thread
+            # because runnning compute similarity multiple times causes growing memory usage
+            # there is probably memory leak in the ANTs
             p = multiprocessing.Process(target=compute_similarity, args=(dwi_tf, dwi_orig, queue))
             p.start()
             p.join()

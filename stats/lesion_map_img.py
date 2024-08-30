@@ -5,6 +5,16 @@ import matplotlib.pyplot as plt
 import nilearn.plotting.glass_brain
 
 def save_glass_brain(image_file, title, output_file, title_size=30, fig_size=(12,8)):
+    """
+    Save a glass brain image with a title to a file.
+
+    Parameters:
+        image_file (str): The path to the NIfTI lesion map file.
+        title (str): The title of the image.
+        output_file (str): The path to the output file.
+        title_size (int, optional): The size of the title. Defaults to 30.
+        fig_size (tuple, optional): The size of the figure. Defaults to (12,8).
+    """
     image = nilearn.image.load_img(image_file)
     fig = plt.figure(figsize=fig_size)
 

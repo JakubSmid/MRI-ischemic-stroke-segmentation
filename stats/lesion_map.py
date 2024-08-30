@@ -5,6 +5,17 @@ import multiprocessing
 import datasets.dataset_loaders as dataset_loaders
 
 def generate_stat_map(dataset: dataset_loaders.Subject, template: ants.ants_image.ANTsImage, output_file: str) -> None:
+    """
+    Computes a statistical map of the lesion probability given a dataset of subjects.
+    
+    Parameters:
+        dataset (list[dataset_loaders.Subject]): The list of subjects to be used for the statistical map.
+        template (ants.ants_image.ANTsImage): The template image for registration to MNI space.
+        output_file (str): The path where the computed statistical map will be saved.
+    
+    Returns:
+        None
+    """
     stat_map = np.zeros(template.shape)
 
     for i, subj in enumerate(dataset):

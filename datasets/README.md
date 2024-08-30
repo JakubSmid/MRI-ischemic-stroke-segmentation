@@ -3,21 +3,19 @@ This folder contains three folders with unmodified datasets (Motol, SISS2015_Tra
 
 In this folder there are three scripts:
 - `download_Motol.py` - Executable script which has been used to download Motol dataset from the NAS drive to the local machine.
-- `dataset_loaders.py` - Contains classes for loading datasets. Each class has list of names and paths to DWI, FLAIR and lesion masks.
+- `dataset_loaders.py` - Contains definition of Subject class which is used for loading images and spatial transformations. Subject class is universal for all datasets. File also contains functions for loading each dataset as a list of Subjects.
+- `generate_transforms.py` - Contains functions for registration of brain MRI scans using ANTs. There are two types of registration: Rigid and SyN. Rigid registration is used for transformation from DWI to FLAIR space. SyN registration is used for transformation from FLAIR to MNI space. Transformation files are saved in each subject folder.
 - `utils.py` - Contains utility functions which are used mainly for preprocessing.
-
-Registration of brain FLAIR scans using ANTs to the MNI space using transformed template [[1]](#1).
 
 ## Motol
 Motol dataset is provided by Second Faculty of Medicine CUNI, Prague.
 
-In this work, I am using only FLAIR and DWI images and corresponding lesion masks labeled by the expert. Images in the Motol dataset are co-registered with SPM software. Also there has been added brain masks generated using HD-BET.
+In this work, I am using only FLAIR and DWI images and corresponding lesion masks labeled by the expert. Images in the Motol dataset are co-registered with SPM software.
 
 In folder `./Motol` there are folders with the code of a particular patient. Because there are available scans in three different time points we have in each patient folder three other folders with names in the following format: `Anat_YYYYMMDD`. In each Anat folder there are three files:
 - `rFlair.nii.gz` - FLAIR image
 - `rDWI2.nii.gz` - DWI image
 - `Leze_FLAIR_DWI2.nrrd` - manual lesion segmentation by the expert
-- `BETmask.nii.gz` - brain mask generated using HD-BET
 
 Scan number `2290867/Anat_20230109` has corrupted lesion segmentation file, thus it is excluded from dataset loading.
 
@@ -26,17 +24,14 @@ Scan number `2290867/Anat_20230109` has corrupted lesion segmentation file, thus
 Motol
 ├── 115346
 │   ├── Anat_20220413
-│   │   ├── BETmask.nii.gz
 │   │   ├── Leze_FLAIR_DWI2.nrrd
 │   │   ├── rDWI2.nii.gz
 │   │   └── rFlair.nii.gz
 │   ├── Anat_20220420
-│   │   ├── BETmask.nii.gz
 │   │   ├── Leze_FLAIR_DWI2.nrrd
 │   │   ├── rDWI2.nii.gz
 │   │   └── rFlair.nii.gz
 │   └── Anat_20220425
-│       ├── BETmask.nii.gz
 │       ├── Leze_FLAIR_DWI2.nrrd
 │       ├── rDWI2.nii.gz
 │       └── rFlair.nii.gz

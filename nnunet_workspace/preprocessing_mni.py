@@ -15,8 +15,8 @@ def preprocessing(dataset: list[datasets.dataset_loaders.Subject],
         output_folder (str): The path to the output folder where preprocessed data will be saved. 
             Defaults to "nnunet_workspace/nnUNet_raw/".
     """
-    os.makedirs(f"{output_folder}/Dataset001_Strokes/imagesTr", exist_ok=True)
-    os.makedirs(f"{output_folder}/Dataset001_Strokes/labelsTr", exist_ok=True)
+    os.makedirs(f"{output_folder}/Dataset011_StrokesMNI/imagesTr", exist_ok=True)
+    os.makedirs(f"{output_folder}/Dataset011_StrokesMNI/labelsTr", exist_ok=True)
     
     N = len(dataset)
     for i, subj in enumerate(dataset):
@@ -24,13 +24,14 @@ def preprocessing(dataset: list[datasets.dataset_loaders.Subject],
 
         subj.load_data()
         subj.extract_brain()
+        subj.apply_transform_to_mni()
         subj.resample_to_target()
         subj.space_integrity_check()
         subj.empty_label_check()
 
-        ants.image_write(subj.flair, f"{output_folder}/Dataset001_Strokes/imagesTr/{subj.name}_0000.nii.gz")
-        ants.image_write(subj.dwi, f"{output_folder}/Dataset001_Strokes/imagesTr/{subj.name}_0001.nii.gz")
-        ants.image_write(subj.label, f"{output_folder}/Dataset001_Strokes/labelsTr/{subj.name}.nii.gz")
+        ants.image_write(subj.flair, f"{output_folder}/Dataset011_StrokesMNI/imagesTr/{subj.name}_0000.nii.gz")
+        ants.image_write(subj.dwi, f"{output_folder}/Dataset011_StrokesMNI/imagesTr/{subj.name}_0001.nii.gz")
+        ants.image_write(subj.label, f"{output_folder}/Dataset011_StrokesMNI/labelsTr/{subj.name}.nii.gz")
         
         subj.free_data()
 
