@@ -39,7 +39,8 @@ def stats_Motol(dataset: list[dataset_loaders.Subject],
     df_cases = pd.DataFrame()
     df_components = pd.DataFrame()
 
-    for subj in dataset:
+    for i, subj in enumerate(dataset):
+        print(f"Processing {i+1}/{len(dataset)}: {subj.name}...")
         dwi = ants.image_read(subj.dwi)
         flair = ants.image_read(subj.flair)
         label_flair, label_dwi = utils.load_nrrd(subj.label)
@@ -57,8 +58,8 @@ def stats_Motol(dataset: list[dataset_loaders.Subject],
             "name": subj.name,
             "shape_flair": flair.shape,
             "shape_dwi": dwi.shape,
-            "voxel_dim_flair": flair.header.get_zooms(),
-            "voxel_dim_dwi": dwi.header.get_zooms(),
+            "voxel_dim_flair": flair.spacing,
+            "voxel_dim_dwi": dwi.spacing,
             "lesion_volume_ml": label_volume,
             "flair_lesion_volume_ml": label_flair_volume,
             "dwi_lesion_volume_ml": label_dwi_volume,
@@ -90,7 +91,8 @@ def stats_ISLES(dataset: list[dataset_loaders.Subject],
     df_cases = pd.DataFrame()
     df_components = pd.DataFrame()
 
-    for subj in dataset: 
+    for i, subj in enumerate(dataset):
+        print(f"Processing {i+1}/{len(dataset)}: {subj.name}...")
         dwi = ants.image_read(subj.dwi)
         flair = ants.image_read(subj.flair)
         label = ants.image_read(subj.label).astype("uint32")
