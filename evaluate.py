@@ -33,6 +33,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input_folder", type=str, help="Folder with predictions, each segmentation should have format {case}_Anat_{date}.nii.gz")
     parser.add_argument("output_file", type=str, help="Output file name (csv)")
+    parser.add_argument("--mni", action="store_true", help="Predictions are in MNI space")
     args = parser.parse_args()
 
     # ignore index 2 (outside BET mask) - it is important for corect Stat scores (true positives in ml, etc.)
@@ -51,6 +52,12 @@ if __name__ == "__main__":
 
         # load prediction
         pred_label = ants.image_read(f"{args.input_folder}/{subj.name}.nii.gz")
+        
+        # transform from MNI space
+        if args.mni:
+            pred_label = utils.invert_SyN_registration(pred_label.astype("float32"), subj.transform_flair_to_mni[0], subj.transform_flair_to_mni[1])
+            pred_label = pred_label.new_image_like(pred_label.numpy().round().astype(np.uint32))
+
         pred_label = utils.resample_label_to_target(pred_label, label.astype("float32"))
         assert label.shape == pred_label.shape, f"Shape mismatch: {label.shape} != {pred_label.shape}"
         assert label.spacing == pred_label.spacing, f"Spacing mismatch: {label.spacing} != {pred_label.spacing}"
