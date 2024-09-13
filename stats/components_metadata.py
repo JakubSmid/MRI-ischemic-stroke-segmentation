@@ -76,8 +76,8 @@ def stats_Motol(dataset: list[dataset_loaders.Subject],
 
         df_cases = pd.concat([df_cases, pd.DataFrame([stats])])
     
-    df_cases.to_csv(f"results/{dataset_name}_stats.csv")
-    df_components.to_csv(f"results/{dataset_name}_components.csv")
+    df_cases.to_csv(f"results/{dataset_name}_stats.csv", index=False)
+    df_components.to_csv(f"results/{dataset_name}_components.csv", index=False)
 
 def stats_ISLES(dataset: list[dataset_loaders.Subject],
                 dataset_name: str):

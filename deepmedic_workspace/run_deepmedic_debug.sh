@@ -1,18 +1,16 @@
 #!/bin/bash
 
 # set visible GPU
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=2
 
-DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
-# load modules
-ml TensorFlow/2.0.0-fosscuda-2019b-Python-3.7.4
+# deactivate old venv
+deactivate
+ml purge
 
 # activate venv
-cd "$DIR/../venv_deepmedic/bin"
-. "activate"
+ml TensorFlow/2.6.0-foss-2021a-CUDA-11.3.1
+. "./venv_deepmedic/bin/activate"
 
 # run DeepMedic
-cd "$DIR/../deepmedic"
-./deepMedicRun -model "$DIR/debug_model/modelConfig_debug1.cfg"	-train "$DIR/debug_model/trainConfig_debug1.cfg" -dev cuda
-./deepMedicRun -model "$DIR/debug_model/modelConfig_debug2.cfg"	-train "$DIR/debug_model/trainConfig_debug2.cfg" -dev cuda
+./deepmedic/deepMedicRun -model "deepmedic_workspace/debug_model/modelConfig_debug1.cfg"    -train "deepmedic_workspace/debug_model/trainConfig_debug1.cfg" -dev cuda
+./deepmedic/deepMedicRun -model "deepmedic_workspace/debug_model/modelConfig_debug2.cfg"	-train "deepmedic_workspace/debug_model/trainConfig_debug2.cfg" -dev cuda
