@@ -5,15 +5,15 @@
 ## Labels
 | Index | Label |
 | --- | --- |
-| 0 | Caudate |
-| 1 | Cerebellum |
-| 2 | Frontal Lobe |
-| 3 | Insula |
-| 4 | Occipital Lobe |
-| 5 | Parietal Lobe |
-| 6 | Putamen |
-| 7 | Temporal Lobe |
-| 8 | Thalamus |
+| 1 | Caudate |
+| 2 | Cerebellum |
+| 3 | Frontal Lobe |
+| 4 | Insula |
+| 5 | Occipital Lobe |
+| 6 | Parietal Lobe |
+| 7 | Putamen |
+| 8 | Temporal Lobe |
+| 9 | Thalamus |
 
 <cite>Collins et al. Automatic 3-D model-based neuroanatomical segmentation. Human Brain Mapping 3(3): 190-208. (1995)</cite>
 
