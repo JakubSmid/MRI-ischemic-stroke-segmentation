@@ -25,5 +25,5 @@ ml TensorFlow/2.6.0-foss-2021a-CUDA-11.3.1
 ./deepmedic/deepMedicRun -model "deepmedic_workspace/model/modelConfig_75FC.cfg" 		        -train "deepmedic_workspace/model/trainConfig_75FC.cfg" -dev cuda
 
 # train
-#./deepmedic/deepMedicRun -model "deepmedic_workspace/model/modelConfig_150FC_DWI.cfg"		-train "deepmedic_workspace/model/trainConfig_150FC_DWI.cfg" -dev cuda
-#./deepmedic/deepMedicRun -model "deepmedic_workspace/model/modelConfig_150FC_FLAIR.cfg"		-train "deepmedic_workspace/model/trainConfig_150FC_FLAIR.cfg" -dev cuda
+#./deepmedic/deepMedicRun -model "deepmedic_workspace/model/modelConfig_75FC_DWI.cfg"		-train "deepmedic_workspace/model/trainConfig_75FC_DWI.cfg" -dev cuda
+#./deepmedic/deepMedicRun -model "deepmedic_workspace/model/modelConfig_75FC_FLAIR.cfg"		-train "deepmedic_workspace/model/trainConfig_75FC_FLAIR.cfg" -dev cuda
