@@ -70,11 +70,16 @@ def plot_sheet():
         subj.load_data()
         subj.flair = ants.reorient_image2(subj.flair)
         subj.label = ants.reorient_image2(subj.label)
+        slice = maximum_area(subj.label)
 
         # load prediction
         pred = ants.image_read(f"{args.pred_folder}/{subj.name}.nii.gz")
         pred = utils.resample_label_to_target(pred, subj.label.astype("float32"))
-        slice = maximum_area(subj.label)
+        if args.mni:
+            pred = utils.invert_SyN_registration(pred.astype("float32"),
+                                                 subj.transform_flair_to_mni[0], 
+                                                 subj.transform_flair_to_mni[1])
+            pred = pred.new_image_like(pred.numpy().round().astype(np.uint32))
 
         # merge expert and prediction
         new_label = np.zeros(subj.label.shape)
@@ -118,11 +123,16 @@ def plot_four():
         subj.flair = ants.reorient_image2(subj.flair)
         subj.dwi = ants.reorient_image2(subj.dwi)
         subj.label = ants.reorient_image2(subj.label)
+        slice = maximum_area(subj.label)
 
         # load prediction
         pred = ants.image_read(f"{args.pred_folder}/{subj.name}.nii.gz")
         pred = utils.resample_label_to_target(pred, subj.label.astype("float32"))
-        slice = maximum_area(subj.label)
+        if args.mni:
+            pred = utils.invert_SyN_registration(pred.astype("float32"),
+                                                 subj.transform_flair_to_mni[0], 
+                                                 subj.transform_flair_to_mni[1])
+            pred = pred.new_image_like(pred.numpy().round().astype(np.uint32))
 
         # merge expert and prediction
         new_label = np.zeros(subj.label.shape)
@@ -160,6 +170,7 @@ def plot_four():
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("mode", choices=["sheet", "four"], help="mode")
+    args.add_argument("--mni", action="store_true", help="Transform from MNI space")
     args.add_argument("pred_folder", help="folder with predictions")
     args.add_argument("output", help="output file or folder")
     args.add_argument("images", nargs='*', help="images to plot")
