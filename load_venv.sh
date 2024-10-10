@@ -10,5 +10,5 @@ deactivate
 ml purge
 
 # activate venv
-ml tensorboard/2.15.1-foss-2023a torchvision/0.16.2-foss-2023a-CUDA-12.1.1 PyTorch/2.1.2-foss-2023a-CUDA-12.1.1
+ml PyTorch/2.2.1-foss-2023b-CUDA-12.4.0
 . venv/bin/activate

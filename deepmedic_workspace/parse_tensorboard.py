@@ -56,7 +56,7 @@ class ParseTensorboard:
         fig.tight_layout()
 
         if save:
-            fig.savefig(title + ".png", dpi=300)
+            fig.savefig("deepmedic_" + title + ".png", dpi=300)
 
 if __name__ == "__main__":
     # load folders

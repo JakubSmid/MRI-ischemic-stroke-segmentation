@@ -1,11 +1,17 @@
 # DeepMedic
-In this folder there is saved file `preprocessing.py` which loads the raw datasets and performs preprocessing which is recommended to be done before DeepMedic training. Preprocessed data are stored also in the new folder `./preprocessed/`.
+In this folder there are scripts used for loading modules on HPC, scripts for converting raw datasets to the DeepMedic format and configuration files of the DeepMedic.
 
-There are also stored configuration files for each model and configuration files with paths to the training and test data. These files are stored in folders `./model` and `./train_ISLES_valid_Motol`.
+First of all, you need to run `preprocessing.py` which co-registers the data, reshapes them, applies brain mask and save them in `deepmedic_workspace/raw` folder in the required structure. After dataset conversion to DeepMedic format, there will be a new folder `raw` with corresponding dataset folder and its files.
 
-There is provided bash script `run_deepmedic.sh` which can be used to run DeepMedic and train all configured models. After training, the trained models and its predictions are stored in `./output` folder.
+Before running DeepMedic preprocessing, please source `source ./venv_deepmedic/bin/activate` to set up the environment and [install DeepMedic](https://github.com/deepmedic/deepmedic/blob/master/documentation/README.md#12-installation).
 
-For evaluation of models, there are following scripts:
-- `evaluation_to_excel.py` - which creates excel file with evaluation for each case
-- `parse_tensorboard.py` - which loads tensorboard logs, parses them and creates plots
-- `plot_summary.py` - creates one plot with data from training from multiple models
+Folder `deepmedic_workspace/train_ISLES_valid_Motol` contains configuration files with paths to the training and validation data. The main folder is `deepmedic_workspace/model` where are stored configuration files for each model.
+
+You can train all models by running `run_deepmedic.sh` or you can look at `run_deepmedic.sh` and comment out some models if you want to train only some.
+
+After training, the trained models and its predictions are stored in `deepmedic_workspace/output` folder. Output folder includes logs and tensorboard plots. It is possible to export these plots to image using `parse_tensorboard.py` or `plot_summary.py`.
+
+To make predictions you need to have original configuration files in `deepmedic_workspace/model`. To run inference you can modify configs in `./test/` and run the following command:
+```
+./deepmedic/deepMedicRun -model deepmedic_workspace/model/modelConfig*.cfg -test deepmedic_workspace/test/config.cfg -load deepmedic_workspace/output/saved_models/*/*.final.*.model.ckpt -dev cuda
+```

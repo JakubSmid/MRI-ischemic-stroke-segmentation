@@ -123,7 +123,7 @@ def nib_load_time(subj, rep=10):
     """
     start = time.time()
     for _ in range(rep):
-        nib.load(subj.flair)
+        nib.load(subj.flair).get_fdata()
     print(f"Nibabel load time {rep} trials: {time.time() - start:.3f} s")
 
 def ants_load_time(subj, rep=10):
@@ -136,7 +136,7 @@ def ants_load_time(subj, rep=10):
     """
     start = time.time()
     for _ in range(rep):
-        ants.image_read(subj.flair)
+        ants.image_read(subj.flair).numpy()
     print(f"ANTs load time {rep} trials: {time.time() - start:.3f} s")
 
 def nib_2_ants(subj, rep=10):
@@ -150,7 +150,7 @@ def nib_2_ants(subj, rep=10):
     start = time.time()
     for _ in range(rep):
         img = nib.load(subj.flair)
-        ants.nifti_to_ants(img)
+        ants.nifti_to_ants(img).numpy()
     print(f"Nifti to ANTs {rep} trials: {time.time() - start:.3f} s")
 
 if __name__ == "__main__":

@@ -21,6 +21,26 @@ def ensemble_func(data: np.ndarray) -> np.ndarray:
     data = (data >= 0.5).astype(np.uint8)
     return data
 
+def ensemble_3DUNet(input_folders: list[str], output_folder: str):
+    """
+    This function takes a list of folders as input, where each folder contains
+    the predictions of a different model. The function then loads the data
+    with probabilities from all the folders, ensembles the predictions, and
+    saves the result to a new folder.
+
+    Parameters:
+        input_folders (list[str]): A list of paths to the input folders.
+        output_folder (str): The path to the output folder.
+    """
+    for filename in os.listdir(input_folders[0]):
+        if not filename.endswith("_probabilities.nii.gz"):
+            continue
+        data = np.array([nib.load(os.path.join(folder, filename)).get_fdata() for folder in input_folders])
+        data = ensemble_func(data)
+        new_nifti = nib.Nifti1Image(data, nib.load(os.path.join(input_folders[0], filename)).affine)
+        nib.save(new_nifti, os.path.join(output_folder, str(filename).replace("_probabilities.nii.gz", ".nii.gz")))
+        print(f"Saved {filename} to {output_folder}")
+
 def ensemble_nnUNet(input_folders: list[str], output_folder: str):
     """
     This function takes a list of folders as input, where each folder contains
@@ -32,14 +52,14 @@ def ensemble_nnUNet(input_folders: list[str], output_folder: str):
         input_folders (list[str]): A list of paths to the input folders.
         output_folder (str): The path to the output folder.
     """
-    for filename in os.listdir(args.input_folders[0]):
+    for filename in os.listdir(input_folders[0]):
         # only consider .npz files
         if not filename.endswith(".npz"):
             continue
 
         # load input data from all input folders
-        data = [np.load(os.path.join(folder, filename))["probabilities"][1] for folder in args.input_folders]
-        metadata = np.load(os.path.join(args.input_folders[0], str(filename).replace(".npz", ".pkl")), allow_pickle=True)
+        data = [np.load(os.path.join(folder, filename))["probabilities"][1] for folder in input_folders]
+        metadata = np.load(os.path.join(input_folders[0], str(filename).replace(".npz", ".pkl")), allow_pickle=True)
 
         # prepare affine
         affine = np.zeros((4,4))
@@ -53,10 +73,10 @@ def ensemble_nnUNet(input_folders: list[str], output_folder: str):
         data = np.swapaxes(data, 0, 2)
 
         new_nifti = nib.Nifti1Image(data, affine)
-        nib.save(new_nifti, os.path.join(args.output_folder, str(filename).replace(".npz", ".nii.gz")))
-        print(f"Saved {filename} to {args.output_folder}")
+        nib.save(new_nifti, os.path.join(output_folder, str(filename).replace(".npz", ".nii.gz")))
+        print(f"Saved {filename} to {output_folder}")
 
-def ensemble_deepmedic(input_folders, output_folder):
+def ensemble_deepmedic(input_folders: list[str], output_folder: str):
     """
     This function takes a list of folders as input, where each folder contains
     the predictions of a different model. The function then loads the data
@@ -67,24 +87,24 @@ def ensemble_deepmedic(input_folders, output_folder):
         input_folders (list[str]): A list of paths to the input folders.
         output_folder (str): The path to the output folder.
     """
-    for filename in os.listdir(args.input_folders[0]):
+    for filename in os.listdir(input_folders[0]):
         # only consider ProbMapClass1.nii.gz files
         if not filename.endswith("_ProbMapClass1.nii.gz"):
             continue
 
         # load input data from all input folders
-        data = [nib.load(os.path.join(folder, filename)).get_fdata() for folder in args.input_folders]
+        data = [nib.load(os.path.join(folder, filename)).get_fdata() for folder in input_folders]
         
         data = ensemble_func(data)
 
-        new_nifti = nib.Nifti1Image(data, nib.load(os.path.join(args.input_folders[0], filename)).affine)
-        nib.save(new_nifti, os.path.join(args.output_folder, str(filename).replace("_ProbMapClass1.nii.gz", ".nii.gz")))
-        print(f"Saved {filename} to {args.output_folder}")
+        new_nifti = nib.Nifti1Image(data, nib.load(os.path.join(input_folders[0], filename)).affine)
+        nib.save(new_nifti, os.path.join(output_folder, str(filename).replace("_ProbMapClass1.nii.gz", ".nii.gz")))
+        print(f"Saved {filename} to {output_folder}")
 
 if __name__ == "__main__":
     
     args = argparse.ArgumentParser()
-    args.add_argument("mode", type=str, choices=["nnUNet", "deepmedic"])
+    args.add_argument("mode", type=str, choices=["nnUNet", "deepmedic", "3DUNet"])
     args.add_argument("output_folder", type=str)
     args.add_argument("input_folders", type=str, nargs="+")
     args = args.parse_args()
@@ -93,3 +113,5 @@ if __name__ == "__main__":
         ensemble_nnUNet(args.input_folders, args.output_folder)
     elif args.mode == "deepmedic":
         ensemble_deepmedic(args.input_folders, args.output_folder)
+    elif args.mode == "3DUNet":
+        ensemble_3DUNet(args.input_folders, args.output_folder)

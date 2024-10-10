@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-to_combine = [f"deepmedic_workspace/output/tensorboard/{folder}" for folder in os.listdir("deepmedic_workspace/output/tensorboard")]
+combine = [f"deepmedic_workspace/output/tensorboard/{folder}" for folder in os.listdir("deepmedic_workspace/output/tensorboard")]
 
 title = "Souhrn pro trénování a validaci"
 average = 20
@@ -16,14 +16,14 @@ ax.set_xlabel("Subepocha")
 ax.set_ylabel("Dice koeficient")
 ax.title.set_text("Klouzavý průměr (pro 20 subepoch) Dice koeficientu")
 
-tbs = [ParseTensorboard(model) for model in to_combine]
+tbs = [ParseTensorboard(model) for model in combine]
 for tb in tbs:
-    name = to_combine[tbs.index(tb)].split("/")[-1]
+    name = combine[tbs.index(tb)].split("/")[-1]
     indicies = np.where(tb._train_dice_steps <= max_step)
     ax.plot(np.convolve(tb.train_dice[indicies], np.ones((average,))/average)[:-average+1], label=f"Trénovací DC {name}")
 
 for tb in tbs:
-    name = to_combine[tbs.index(tb)].split("/")[-1]
+    name = combine[tbs.index(tb)].split("/")[-1]
     indicies = np.where(tb._train_dice_steps <= max_step)
     ax.plot(np.convolve(tb.val_dice[indicies], np.ones((average,))/average)[:-average+1], label=f"Validační DC {name}")
 

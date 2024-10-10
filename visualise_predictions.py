@@ -10,7 +10,7 @@ import os
 
 def maximum_area(mask: ants.ants_image.ANTsImage) -> int:
     mask_np = mask.numpy()
-    return np.argmax(mask_np.sum(axis=0).sum(axis=0))
+    return np.argmax(mask_np.sum(axis=(0, 1)))
 
 def plot_image(image: ants.ants_image.ANTsImage, slice: int, ax: plt.Axes):
     view = image.numpy()[:,:,slice]
