@@ -12,7 +12,7 @@ from torchmetrics.classification import Dice
 
 import torchio as tio
 
-from model import UNet3D
+from model import UNet3D, TwoHeadedUNet3D
 from dataset import load_dataset
 
 
@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("model_folder", type=str)
 parser.add_argument("--channel", type=str)
 parser.add_argument("--probabilities", action="store_true")
+parser.add_argument("--model", choices=["UNet3D", "TwoHeadedUNet3D"], default="UNet3D")
 parser.add_argument("--epoch", type=int, default=20)
 args = parser.parse_args()
 
@@ -42,7 +43,10 @@ preprocessing_transform = tio.Compose([
 # load dataloaders and model
 valid_dataset = load_dataset(mode="val", transform=preprocessing_transform)
 
-model = UNet3D(in_channels=1 if args.channel else 2).cuda()
+if args.model == "UNet3D":
+    model = UNet3D(in_channels=1 if args.channel else 2).cuda()
+elif args.model == "TwoHeadedUNet3D":
+    model = TwoHeadedUNet3D().cuda()
 model.load_state_dict(torch.load(f"{args.model_folder}/checkpoints/epoch_{args.epoch}.pth"))
 model.eval()
 metric = Dice().cuda()
