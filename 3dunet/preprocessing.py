@@ -9,6 +9,10 @@ def preprocessing(dataset: list[dataset_loaders.Subject],
                   output_folder: str = "3dunet/raw/"):
     N = len(dataset)
     for i, subj in enumerate(dataset):
+        # # skip empty subjects
+        # if subj.name in ["sub-strokecase0150", "sub-strokecase0151", "sub-strokecase0170"]:
+        #     continue
+
         # print progress
         print(f"Processing {i+1}/{N}: {subj.name}...")
 
@@ -17,7 +21,13 @@ def preprocessing(dataset: list[dataset_loaders.Subject],
         subj.resample_to_target()
         subj.space_integrity_check()
         subj.empty_label_check()
-        
+
+        # # count the number of voxels in the mask
+        # bet_n_voxels = np.count_nonzero(subj.BETmask.numpy())
+        # label_n_voxels = np.count_nonzero(subj.label.numpy())
+        # bet_label_ratio = bet_n_voxels/label_n_voxels
+        # subj.BETmask[subj.label] = round(bet_label_ratio)
+
         # prepare folder
         if not os.path.exists(f"{output_folder}/{subj.name}"):
             os.makedirs(f"{output_folder}/{subj.name}")

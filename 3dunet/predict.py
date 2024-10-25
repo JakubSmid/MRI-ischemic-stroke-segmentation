@@ -18,10 +18,11 @@ from dataset import load_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument("model_folder", type=str)
-parser.add_argument("--channel", type=str)
-parser.add_argument("--probabilities", action="store_true")
-parser.add_argument("--model", choices=["UNet3D", "TwoHeadedUNet3D"], default="UNet3D")
-parser.add_argument("--epoch", type=int, default=20)
+parser.add_argument("-f", "--filters", default=[64, 128, 256, 512], type=int, nargs="+")
+parser.add_argument("-p", "--probabilities", action="store_true")
+parser.add_argument("-m", "--model", choices=["UNet3D", "TwoHeadedUNet3D"], default="UNet3D")
+parser.add_argument("--modality", type=str)
+parser.add_argument("-e", "--epoch", type=int, default=20)
 args = parser.parse_args()
 
 os.makedirs(f"{args.model_folder}/predictions", exist_ok=True)
@@ -44,7 +45,9 @@ preprocessing_transform = tio.Compose([
 valid_dataset = load_dataset(mode="val", transform=preprocessing_transform)
 
 if args.model == "UNet3D":
-    model = UNet3D(in_channels=1 if args.channel else 2).cuda()
+    model = UNet3D(in_channels=1 if args.modality else 2,
+                   filters=args.filters[:3],
+                   bottleneck_filters=args.filters[3]).cuda()
 elif args.model == "TwoHeadedUNet3D":
     model = TwoHeadedUNet3D().cuda()
 model.load_state_dict(torch.load(f"{args.model_folder}/checkpoints/epoch_{args.epoch}.pth"))
@@ -60,9 +63,9 @@ for i, subject in enumerate(valid_dataset):
 
     with torch.no_grad():
         for patch_batch in patch_loader:
-            if args.channel == "flair":
+            if args.modality == "flair":
                 image = patch_batch["flair"]["data"].cuda()
-            elif args.channel == "dwi":
+            elif args.modality == "dwi":
                 image = patch_batch["dwi"]["data"].cuda()
             else:
                 image = torch.cat((patch_batch["flair"]["data"], patch_batch["dwi"]["data"]), dim=1).cuda()

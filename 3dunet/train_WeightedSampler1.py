@@ -14,7 +14,7 @@ import torchio as tio
 from model import UNet3D
 from dataset import load_dataset
 
-model_name = f"LabelSampler_{time.strftime('%Y%m%d_%H%M%S')}"
+model_name = f"WeightedSampler1_{time.strftime('%Y%m%d_%H%M%S')}"
 
 def log_images(subjects, writer, tag, epoch):
     batch_size = len(subjects["name"])
@@ -47,16 +47,17 @@ preprocessing_transform = tio.Compose([
 ])
 
 # load dataloaders and model
-train_dataset = load_dataset(mode="train", transform=preprocessing_transform, exclude_empty=True)
-valid_dataset = load_dataset(mode="val", transform=preprocessing_transform, exclude_empty=True)
+train_dataset = load_dataset(dataset_dir="raw_weighted", mode="train", transform=preprocessing_transform, exclude_empty=True)
+valid_dataset = load_dataset(dataset_dir="raw_weighted", mode="val", transform=preprocessing_transform, exclude_empty=True)
 
-sampler = tio.LabelSampler(patch_size=96, label_name="label")
+train_sampler = tio.WeightedSampler(patch_size=96, probability_map="BETmask")
+valid_sampler = tio.LabelSampler(patch_size=96, label_name="label")
 
 train_patches_queue = tio.Queue(
     train_dataset,
     max_length=300,
     samples_per_volume=10,
-    sampler=sampler,
+    sampler=train_sampler,
     num_workers=12
 )
 
@@ -64,7 +65,7 @@ val_patches_queue = tio.Queue(
     valid_dataset,
     max_length=28,
     samples_per_volume=1,
-    sampler=sampler,
+    sampler=valid_sampler,
     num_workers=12
 )
 logger.info(f"Max train RAM usage: {train_patches_queue.get_max_memory_pretty()} MB")
@@ -96,7 +97,7 @@ for epoch in range(20):
         label = batch['label']['data'].round().cuda()
 
         # update loss positive weight
-        loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
+        loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/(label.sum()+1))
 
         optimizer.zero_grad()
         prediction = model(images)
@@ -110,7 +111,8 @@ for epoch in range(20):
         dice = metric(segmentation, label)
         train_dice += dice
         logger.info(f"Training Dice: {dice:.4f}")
-        logger.info(f"Average time per batch: {(time.time() - train_start_time)/(i+1):.02f} s")
+        # logger.info(f"Average time per batch: {(time.time() - train_start_time)/(i+1):.02f} s")
+        logger.info(f"Number of labels: {label.sum()}, Number of empty labels: {(label==0.).sum()})")
 
         # log images
         # log_images(batch, writer, "Train", epoch)
@@ -140,7 +142,7 @@ for epoch in range(20):
             prediction = model(images)
 
             # update loss positive weight
-            loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())   
+            loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/(label.sum()+1))   
             loss = loss_fn(prediction, label.type(torch.FloatTensor).cuda())
             
             segmentation = torch.sigmoid(prediction).round()

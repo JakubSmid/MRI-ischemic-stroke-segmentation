@@ -7,9 +7,9 @@ from torchsummary import summary
 logger = logging.getLogger(__name__)
 
 class EncoderConv3DBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, concat_channels=0, first_level=False):
+    def __init__(self, in_channels, out_channels, first_level=False):
         super().__init__()
-        self.conv1 = Conv3d(in_channels=in_channels+concat_channels, out_channels=out_channels//2, kernel_size=3, padding="same")
+        self.conv1 = Conv3d(in_channels=in_channels, out_channels=out_channels//2, kernel_size=3, padding="same")
         self.bn1 = BatchNorm3d(num_features=out_channels//2)
         self.relu = ReLU()
 
@@ -20,11 +20,8 @@ class EncoderConv3DBlock(nn.Module):
         if not first_level:
             self.pooling = MaxPool3d(kernel_size=2, stride=2)
 
-    def forward(self, input, concat=None):
+    def forward(self, input):
         out = input
-        if concat != None:
-            out = torch.cat((out, concat), 1)
-        
         if not self.first_level:
             out = self.pooling(out)
 
@@ -61,36 +58,40 @@ class TwoHeadedUNet3D(nn.Module):
         super().__init__()
 
         self.encoder0 = EncoderConv3DBlock(in_channels=1, out_channels=filters[0], first_level=True)
-        
-        self.head1_encoder1 = EncoderConv3DBlock(in_channels=filters[0], out_channels=filters[1])
-        self.head1_encoder2 = EncoderConv3DBlock(in_channels=filters[1], out_channels=filters[2])
+        self.encoder1 = EncoderConv3DBlock(in_channels=filters[0], out_channels=filters[1])
+        self.encoder2 = EncoderConv3DBlock(in_channels=filters[1], out_channels=filters[2])
 
-        self.head0_encoder1 = EncoderConv3DBlock(in_channels=filters[0], out_channels=filters[1], concat_channels=filters[0])
-        self.head0_encoder2 = EncoderConv3DBlock(in_channels=filters[1], out_channels=filters[2], concat_channels=filters[1])
-
-        self.bottleneck = EncoderConv3DBlock(in_channels=filters[2], out_channels=bottleneck_filters, concat_channels=filters[2])
+        self.bottleneck = EncoderConv3DBlock(in_channels=filters[2], out_channels=bottleneck_filters)
 
         self.decoder2 = DecoderConv3DBlock(in_channels=bottleneck_filters, concat_channels=filters[2])
         self.decoder1 = DecoderConv3DBlock(in_channels=filters[2], concat_channels=filters[1])
         self.decoder0 = DecoderConv3DBlock(in_channels=filters[1], concat_channels=filters[0], first_level=True)
 
+        self.concat_conv0 = nn.Conv3d(in_channels=2*filters[0], out_channels=filters[0], kernel_size=1)
+        self.concat_conv1 = nn.Conv3d(in_channels=2*filters[1], out_channels=filters[1], kernel_size=1)
+        self.concat_conv2 = nn.Conv3d(in_channels=2*filters[2], out_channels=filters[2], kernel_size=1)
+
     def forward(self, input):
-        head0_input = input[:, 0:1, :, :, :]
+
         head1_input = input[:, 1:2, :, :, :]
-
         head1_out0 = self.encoder0(head1_input)
-        head1_out1 = self.head1_encoder1(head1_out0)
-        head1_out2 = self.head1_encoder2(head1_out1)
+        head1_out1 = self.encoder1(head1_out0)
+        head1_out2 = self.encoder2(head1_out1)
 
+        head0_input = input[:, 0:1, :, :, :]
         head0_out0 = self.encoder0(head0_input)
-        head0_out1 = self.head0_encoder1(head0_out0, concat=head1_out0)
-        head0_out2 = self.head0_encoder2(head0_out1, concat=head1_out1)
+        head0_out1 = self.encoder1(head0_out0)
+        head0_out2 = self.encoder2(head0_out1)
 
-        out = self.bottleneck(head0_out2, concat=head1_out2)
+        out = self.bottleneck(head0_out2)
 
-        out = self.decoder2(out, concat=head0_out2)
-        out = self.decoder1(out, concat=head0_out1)
-        out = self.decoder0(out, concat=head0_out0)
+        concat0 = torch.cat((head0_out0, head1_out0), 1)
+        concat1 = torch.cat((head0_out1, head1_out1), 1)
+        concat2 = torch.cat((head0_out2, head1_out2), 1)
+
+        out = self.decoder2(out, concat=self.concat_conv2(concat2))
+        out = self.decoder1(out, concat=self.concat_conv1(concat1))
+        out = self.decoder0(out, concat=self.concat_conv0(concat0))
         
         return out
 
