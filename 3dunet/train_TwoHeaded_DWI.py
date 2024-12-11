@@ -11,10 +11,10 @@ from torchmetrics.classification import Dice
 
 import torchio as tio
 
-from model import UNet3D
+from model import TwoHeadedUNet3D
 from dataset import load_dataset
 
-model_name = f"LabelSampler_augmentation2_{time.strftime('%Y%m%d_%H%M%S')}"
+model_name = f"TwoHeadedUNet3D_DWI_{time.strftime('%Y%m%d_%H%M%S')}"
 
 def log_images(subjects, writer, tag, epoch):
     batch_size = len(subjects["name"])
@@ -43,17 +43,11 @@ writer = SummaryWriter(log_dir=f"output/logs/{model_name}")
 
 preprocessing_transform = tio.Compose([
     tio.Pad((48, 48, 48)),
-    tio.ZNormalization(),
-])
-transform = tio.Compose([
-    preprocessing_transform,
-    tio.RandomAffine(scales=0.1, degrees=45, default_pad_value="otsu"),
-    tio.RandomBlur((0, 0.4)),
-    tio.RandomNoise(std=0.05),
+    tio.ZNormalization()
 ])
 
 # load dataloaders and model
-train_dataset = load_dataset(mode="train", transform=transform, exclude_empty=True)
+train_dataset = load_dataset(mode="train", transform=preprocessing_transform, exclude_empty=True)
 valid_dataset = load_dataset(mode="val", transform=preprocessing_transform, exclude_empty=True)
 
 sampler = tio.LabelSampler(patch_size=96, label_name="label")
@@ -75,11 +69,11 @@ val_patches_queue = tio.Queue(
 )
 logger.info(f"Max train RAM usage: {train_patches_queue.get_max_memory_pretty()} MB")
 
-train_dataloader = tio.SubjectsLoader(train_patches_queue, batch_size=2)
+train_dataloader = tio.SubjectsLoader(train_patches_queue, batch_size=1)
 valid_dataloader = tio.SubjectsLoader(val_patches_queue, batch_size=2)
 
 # load optimizer and metrics
-model = UNet3D(in_channels=2).cuda()
+model = TwoHeadedUNet3D().cuda()
 metric = Dice().cuda()
 optimizer = Adamax(params=model.parameters())
 
@@ -98,7 +92,7 @@ for epoch in range(20):
         logger.info(f"Loading data {batch['name']}")
 
         # load data
-        images = torch.cat((batch["flair"]['data'], batch["dwi"]['data']), dim=1).cuda() # [B, C, W, H, D]
+        images = torch.cat((batch["dwi"]['data'], batch["flair"]['data']), dim=1).cuda() # [B, C, W, H, D]
         label = batch['label']['data'].round().cuda()
 
         # forward
@@ -109,14 +103,14 @@ for epoch in range(20):
         loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
 
         # calculate loss
-        loss = loss_fn(prediction, label)
+        loss = loss_fn(prediction, label.type(torch.FloatTensor).cuda())
         loss.backward()
         optimizer.step()
         
         # log statistics
         segmentation = torch.sigmoid(prediction).round()
         train_loss += loss.item()
-        dice = metric(segmentation, label.type(torch.IntTensor).cuda())
+        dice = metric(segmentation, label)
         train_dice += dice
         logger.info(f"Training Dice: {dice:.4f}")
         logger.info(f"Average time per batch: {(time.time() - train_start_time)/(i+1):.02f} s")
@@ -144,7 +138,7 @@ for epoch in range(20):
             logger.info(f"Loading data {batch['name']}")
             
             # load data
-            images = torch.cat((batch["flair"]['data'], batch["dwi"]['data']), dim=1).cuda()
+            images = torch.cat((batch["dwi"]['data'], batch["flair"]['data']), dim=1).cuda()
             label = batch['label']['data'].cuda()
             prediction = model(images)
 

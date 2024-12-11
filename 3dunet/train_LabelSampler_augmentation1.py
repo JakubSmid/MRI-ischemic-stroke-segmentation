@@ -93,19 +93,22 @@ for epoch in range(20):
     # training
     model.train()
     train_start_time = time.time()
-    for i, subjects in enumerate(train_dataloader):
+    for i, batch in enumerate(train_dataloader):
         logger.info(f"Loading new batch {i+1}/{len(train_dataloader)}")
-        logger.info(f"Loading data {subjects['name']}")
+        logger.info(f"Loading data {batch['name']}")
 
         # load data
-        images = torch.cat((subjects["flair"]['data'], subjects["dwi"]['data']), dim=1).cuda() # [B, C, W, H, D]
-        label = subjects['label']['data'].round().cuda()
+        images = torch.cat((batch["flair"]['data'], batch["dwi"]['data']), dim=1).cuda() # [B, C, W, H, D]
+        label = batch['label']['data'].round().cuda()
+
+        # forward
+        optimizer.zero_grad()
+        prediction = model(images)
 
         # update loss positive weight
         loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
 
-        optimizer.zero_grad()
-        prediction = model(images)
+        # calculate loss
         loss = loss_fn(prediction, label)
         loss.backward()
         optimizer.step()
@@ -113,13 +116,13 @@ for epoch in range(20):
         # log statistics
         segmentation = torch.sigmoid(prediction).round()
         train_loss += loss.item()
-        dice = metric(segmentation, label.to(torch.int))
+        dice = metric(segmentation, label.type(torch.IntTensor).cuda())
         train_dice += dice
         logger.info(f"Training Dice: {dice:.4f}")
-        logger.info(f"Average time per subject: {(time.time() - train_start_time)/(i+1):.02f} s")
+        logger.info(f"Average time per batch: {(time.time() - train_start_time)/(i+1):.02f} s")
 
         # log images
-        # log_images(subjects, writer, "Train", epoch)
+        # log_images(batch, writer, "Train", epoch)
 
     # calculate statistics
     train_loss = train_loss / len(train_dataloader)
@@ -128,7 +131,7 @@ for epoch in range(20):
     # log training results
     logger.info(f"--------------- Training finished - printing results ---------------")
     logger.info(f"Training Loss: {train_loss} \t Training Dice: {train_dice:.4f}")
-    logger.info(f"Training time: {time.time() - train_start_time:.2f} s \t Aveage time per subject: {(time.time() - train_start_time)/len(train_dataloader):.02f} s")
+    logger.info(f"Training time: {time.time() - train_start_time:.2f} s \t Aveage time per batch: {(time.time() - train_start_time)/len(train_dataloader):.02f} s")
     writer.add_scalar("Loss/Train", train_loss, epoch)
     writer.add_scalar("Dice/Train", train_dice, epoch)
 
@@ -136,13 +139,13 @@ for epoch in range(20):
     model.eval()
     valid_start_time = time.time()
     with torch.no_grad():
-        for i, subjects in enumerate(valid_dataloader):
+        for i, batch in enumerate(valid_dataloader):
             logger.info(f"Loading new batch {i+1}/{len(valid_dataloader)}")
-            logger.info(f"Loading data {subjects['name']}")
+            logger.info(f"Loading data {batch['name']}")
             
             # load data
-            images = torch.cat((subjects["flair"]['data'], subjects["dwi"]['data']), dim=1).cuda()
-            label = subjects['label']['data'].cuda()
+            images = torch.cat((batch["flair"]['data'], batch["dwi"]['data']), dim=1).cuda()
+            label = batch['label']['data'].cuda()
             prediction = model(images)
 
             # update loss positive weight
@@ -156,7 +159,7 @@ for epoch in range(20):
             logger.info(f"Validation Dice: {dice:.4f}")
 
             # log images
-            # log_images(subjects, writer, "Validation", epoch)
+            # log_images(batch, writer, "Validation", epoch)
             
     # calculate statistics
     valid_loss = valid_loss / len(valid_dataloader)
@@ -165,7 +168,7 @@ for epoch in range(20):
     # log validation results
     logger.info(f"--------------- Validation finished - printing results ---------------")
     logger.info(f"Validation Loss: {valid_loss} \t Validation Dice: {valid_dice:.4f}")
-    logger.info(f"Validation time: {time.time() - valid_start_time:.2f} s \t Aveage time per subject: {(time.time() - valid_start_time)/len(valid_dataloader):.02f} s")
+    logger.info(f"Validation time: {time.time() - valid_start_time:.2f} s \t Aveage time per batch: {(time.time() - valid_start_time)/len(valid_dataloader):.02f} s")
     writer.add_scalar("Loss/Validation", valid_loss, epoch)
     writer.add_scalar("Dice/Validation", valid_dice, epoch)
     

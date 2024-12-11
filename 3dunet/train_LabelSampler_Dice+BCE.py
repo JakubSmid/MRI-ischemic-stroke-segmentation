@@ -14,7 +14,7 @@ import torchio as tio
 from model import UNet3D
 from dataset import load_dataset
 
-model_name = f"LabelSampler_augmentation2_{time.strftime('%Y%m%d_%H%M%S')}"
+model_name = f"LabelSampler_Dice+BCE_{time.strftime('%Y%m%d_%H%M%S')}"
 
 def log_images(subjects, writer, tag, epoch):
     batch_size = len(subjects["name"])
@@ -43,17 +43,11 @@ writer = SummaryWriter(log_dir=f"output/logs/{model_name}")
 
 preprocessing_transform = tio.Compose([
     tio.Pad((48, 48, 48)),
-    tio.ZNormalization(),
-])
-transform = tio.Compose([
-    preprocessing_transform,
-    tio.RandomAffine(scales=0.1, degrees=45, default_pad_value="otsu"),
-    tio.RandomBlur((0, 0.4)),
-    tio.RandomNoise(std=0.05),
+    tio.ZNormalization()
 ])
 
 # load dataloaders and model
-train_dataset = load_dataset(mode="train", transform=transform, exclude_empty=True)
+train_dataset = load_dataset(mode="train", transform=preprocessing_transform, exclude_empty=True)
 valid_dataset = load_dataset(mode="val", transform=preprocessing_transform, exclude_empty=True)
 
 sampler = tio.LabelSampler(patch_size=96, label_name="label")
@@ -78,10 +72,23 @@ logger.info(f"Max train RAM usage: {train_patches_queue.get_max_memory_pretty()}
 train_dataloader = tio.SubjectsLoader(train_patches_queue, batch_size=2)
 valid_dataloader = tio.SubjectsLoader(val_patches_queue, batch_size=2)
 
+class DiceLoss(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, y_pred, y_true):
+        intersection = torch.count_nonzero(y_true * y_pred)
+        if y_pred.sum() == 0 and y_true.sum() == 0:
+            return 0
+        elif intersection == 0:
+            return 100
+        dc = 2 * intersection / (torch.sum(y_pred) + torch.sum(y_true))
+        return 1 - dc
+
 # load optimizer and metrics
 model = UNet3D(in_channels=2).cuda()
 metric = Dice().cuda()
 optimizer = Adamax(params=model.parameters())
+dc_fn = DiceLoss().cuda()
 
 for epoch in range(20):
     logger.info(f"---------------------------------------------- Starting new epoch {epoch+1} ----------------------------------------------")
@@ -104,19 +111,19 @@ for epoch in range(20):
         # forward
         optimizer.zero_grad()
         prediction = model(images)
-
+        segmentation = torch.sigmoid(prediction).round()
+        
         # update loss positive weight
-        loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
-
+        bce_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
+        
         # calculate loss
-        loss = loss_fn(prediction, label)
+        loss = dc_fn(segmentation, label) + bce_fn(prediction, label.type(torch.FloatTensor).cuda())
         loss.backward()
         optimizer.step()
         
         # log statistics
-        segmentation = torch.sigmoid(prediction).round()
         train_loss += loss.item()
-        dice = metric(segmentation, label.type(torch.IntTensor).cuda())
+        dice = metric(segmentation, label)
         train_dice += dice
         logger.info(f"Training Dice: {dice:.4f}")
         logger.info(f"Average time per batch: {(time.time() - train_start_time)/(i+1):.02f} s")
@@ -149,10 +156,10 @@ for epoch in range(20):
             prediction = model(images)
 
             # update loss positive weight
-            loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())   
-            loss = loss_fn(prediction, label.type(torch.FloatTensor).cuda())
-            
             segmentation = torch.sigmoid(prediction).round()
+            bce_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/label.sum())
+            loss = dc_fn(segmentation, label) + bce_fn(prediction, label.type(torch.FloatTensor).cuda())
+            
             valid_loss += loss.item()
             dice = metric(segmentation, label)
             valid_dice += dice

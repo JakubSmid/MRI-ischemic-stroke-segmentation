@@ -96,11 +96,14 @@ for epoch in range(20):
         images = torch.cat((batch["flair"]['data'], batch["dwi"]['data']), dim=1).cuda() # [B, C, W, H, D]
         label = batch['label']['data'].round().cuda()
 
+        # forward
+        optimizer.zero_grad()
+        prediction = model(images)
+        
         # update loss positive weight
         loss_fn = BCEWithLogitsLoss(pos_weight=(label==0.).sum()/(label.sum()+1))
 
-        optimizer.zero_grad()
-        prediction = model(images)
+        # calculate loss
         loss = loss_fn(prediction, label.type(torch.FloatTensor).cuda())
         loss.backward()
         optimizer.step()
