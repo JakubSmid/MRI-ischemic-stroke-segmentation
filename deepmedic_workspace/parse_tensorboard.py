@@ -47,6 +47,7 @@ class ParseTensorboard:
         indicies = np.where(self._whole_scan_steps <= max_step)
         ax[1].plot(self._whole_scan_steps[indicies], self.whole_scan[indicies], label="Validační Dice koeficient na celých skenech", marker=".")
         ax[1].grid()
+        ax[1].legend(loc="upper left")
         ax[1].set_ylim(0, 1)
         ax[1].set_xlabel("Subepocha")
         ax[1].set_ylabel("Dice koeficient")

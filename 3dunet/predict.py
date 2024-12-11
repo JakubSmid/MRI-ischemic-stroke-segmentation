@@ -74,9 +74,10 @@ for i, subject in enumerate(valid_dataset):
             aggregator.add_batch(prediction, patch_batch[tio.LOCATION])
 
     output_tensor = aggregator.get_output_tensor()
+    output_tensor = torch.sigmoid(output_tensor)
     if args.probabilities:
         tio.ScalarImage(tensor=output_tensor, affine=subject["flair"].affine).save(f"{args.model_folder}/predictions/{subject['name']}_probabilities.nii.gz")
-    output_tensor = torch.sigmoid(output_tensor).round()
+    output_tensor = output_tensor.round()
 
     dice = metric(output_tensor, subject["label"]["data"].round())
     logger.info(f"Dice: {dice:.4f}")

@@ -63,9 +63,9 @@ def timings(subj: dataset_loaders.Subject):
 
     # resample dwi to flair
     nib_resample_time = time.time()
-    flair = nibabel.processing.conform(flair, out_shape=(200,200,200), voxel_size=(1,1,1))
-    dwi = nibabel.processing.resample_from_to(dwi, flair)
-    mask = nibabel.processing.resample_from_to(mask, flair)
+    flair = nibabel.processing.conform(flair, out_shape=(200,200,200), voxel_size=(1,1,1), order=1)
+    dwi = nibabel.processing.resample_from_to(dwi, flair, order=1)
+    mask = nibabel.processing.resample_from_to(mask, flair, order=1)
     nib_resample_time = time.time() - nib_resample_time
 
     # apply mask
