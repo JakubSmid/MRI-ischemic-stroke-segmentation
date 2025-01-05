@@ -1,3 +1,6 @@
+# Atlases
+Atlases in MNI space are used for dataset analysis in the Master Thesis.
+
 # MNI Structural Atlas
 
 9 anatomical structural regions transformed into MNI152.

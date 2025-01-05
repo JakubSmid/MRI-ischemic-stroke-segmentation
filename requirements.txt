@@ -1,0 +1,12 @@
+antspyx
+pynrrd
+connected-components-3d
+nilearn
+torchmetrics
+torchio
+
+nibabel
+
+torch
+torchvision
+torchaudio
