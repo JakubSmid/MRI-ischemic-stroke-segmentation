@@ -18,4 +18,4 @@ The third part is folder with `deepmedic` and `deepmedic_workspace`. These folde
 
 The fourth part is the `3dunet` folder, which contains custom implementation of 3D U-Net. This folder also contains training scripts and trained models.
 
-Summarized results and output can be found in the `results` folder. There are csv files with statistics for each model, visualisations of the predictions and Jupyter notebook with analysis of the results.
+Summarized results of the experiments can be found in the `results` folder. There are csv files with statistics for each model, visualisations of the predictions and Jupyter notebook with analysis of the results.
