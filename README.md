@@ -12,9 +12,9 @@ The first part is located in the `datasets` folder. This folder should contain t
 
 Before training the neural networks, the scans need to be coregistered by generating the appropriate transformations and skull stripping masks need to be generated. These steps are used to store the necessary files in the dataset folders. After this step, it is possible to do analyses of datasets using scripts in the `stats` folder and it is possible to start training neural networks.
 
-The second main part is the `nnUNet` and `nnunet_workspace` folder, which contains the first of the tested methods. nnUNet is a method that uses 3D UNet with residual blocks as the backbone. The main adventage of nnUNet is the automatic data preprocessing and automatic neural network configuration and scaling of the UNet. The scripts for raw data conversion and nnUNet configuration are in the `nnunet_workspace` folder. Together with these files, the folder is used to store the preprocessed images and to store the results.
+The second main part is the `nnUNet` and `nnunet_workspace` folder, which contains the first of the tested methods. nnUNet is a method that uses 3D UNet with residual blocks as the backbone. The main advantage of nnUNet is the automatic data preprocessing and automatic neural network configuration and scaling of the UNet. The scripts for raw data conversion and nnUNet configuration are in the `nnunet_workspace` folder. Together with these files, the folder is used to store the preprocessed images and to store the results.
 
-The third part is folder with `deepmedic` and `deepmedic_workspace`. These folders contains clonned DeepMedic repository and folder `deepmedic_workspace` contains the preprocessed data, configuration files and trained models.
+The third part is folder with `deepmedic` and `deepmedic_workspace`. These folders contains cloned DeepMedic repository and folder `deepmedic_workspace` contains the preprocessed data, configuration files and trained models.
 
 The fourth part is the `3dunet` folder, which contains custom implementation of 3D U-Net. This folder also contains training scripts and trained models.
 
