@@ -1,8 +1,6 @@
 # Automated Segmentation of Brain Ischemic Stroke
 [Master's thesis PDF](./doc/Automaticka_segmentace_ischemicke_leze_u_cevni_mozkove_prihody.pdf)
 
-Project is also available on [GitHub](https://github.com/JakubSmid/MRI-ischemic-stroke-segmentation).
-
 ## Repository structure
 In this project, three deep learning stroke segmentation methods are tested on 3D MRI scans. Each of these methods is stored in its own folder in the repository. Configuration files and models of DeepMedic and nnU-Net are located in the folder `{Method Name}_workspace`.
 
